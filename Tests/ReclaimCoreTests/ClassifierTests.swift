@@ -70,6 +70,15 @@ final class ClassifierTests: XCTestCase {
         let f = Classifier(config: Config()).classify(p, in: ctx)
         XCTAssertEqual(f?.reason, "nothing is listening on port 3111 (its worktree /repo/.worktrees/old is gone)")
     }
+
+    func testPortCandidatesOnlyReturnsPortUnboundMatches() {
+        let puma = ProcessRecord(pid: 77, ppid: 1, cpu: 1, rssKB: 300_000, age: 864_000,
+                                 user: "me", command: "puma 8.0.2 (tcp://localhost:3000) [core]")
+        let other = ProcessRecord(pid: 78, ppid: 1, cpu: 1, rssKB: 300_000, age: 864_000,
+                                  user: "me", command: "/usr/libexec/somethingelse")
+        let candidates = Classifier(config: Config()).portCandidates(in: [puma, other])
+        XCTAssertEqual(candidates.map(\.pid), [77])
+    }
 }
 
 extension Context {

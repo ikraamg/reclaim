@@ -53,6 +53,15 @@ public struct Classifier {
         self.invalidRules = invalidRules
     }
 
+    /// Processes some portUnbound rule matches — the only ones worth an lsof probe.
+    public func portCandidates(in processes: [ProcessRecord]) -> [ProcessRecord] {
+        let portRules = compiled.filter { $0.0.evidence == .portUnbound }
+        return processes.filter { p in
+            let range = NSRange(p.command.startIndex..., in: p.command)
+            return portRules.contains { $0.1.firstMatch(in: p.command, range: range) != nil }
+        }
+    }
+
     public func classify(_ p: ProcessRecord, in ctx: Context) -> Finding? {
         if p.user != ctx.me || ctx.untouchable.contains(p.pid) { return wedged(p) }
         if config.neverKill.contains(where: { p.command.contains($0) }) { return wedged(p) }

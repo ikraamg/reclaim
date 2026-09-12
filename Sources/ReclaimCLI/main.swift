@@ -9,6 +9,11 @@ func fail(_ message: String, code: Int32) -> Never {
     exit(code)
 }
 
+let known: Set<String> = ["--dry-run", "--json", "--self-check", "--disk", "--boot"]
+if let stray = args.subtracting(known).sorted().first {
+    fail("reclaim: unknown flag \(stray) - refusing to run", code: 2)
+}
+
 if args.contains("--self-check") {
     let failures = SelfCheck.failures()
     if failures.isEmpty {
@@ -34,28 +39,16 @@ let processes = ProcessSnapshot.live()
 let byPid = Dictionary(processes.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
 let me = shell(["id", "-un"]).trimmingCharacters(in: .whitespacesAndNewlines)
 
-// Never touch ourselves or anything above us in the tree. Walk the full ancestor
-// chain (matching reclaim.py's ancestors()) rather than stopping at the direct parent.
-var untouchable: Set<Int32> = [0, 1, getpid(), getppid()]
-var cursor: Int32? = getpid()
-var seen: Set<Int32> = []
-while let pid = cursor, pid > 1, !seen.contains(pid) {
-    seen.insert(pid)
-    guard let p = byPid[pid] else { break }
-    untouchable.insert(pid)
-    cursor = p.ppid
-}
+// Never touch ourselves or anything above us in the tree.
+var untouchable = Ancestry.untouchable(from: getpid(), in: byPid)
+untouchable.insert(getppid())  // belt and braces: covers our own pid being absent from the snapshot
 
 let classifier = Classifier(config: config)
 for rule in classifier.invalidRules {
     FileHandle.standardError.write(Data("reclaim: ignoring rule \"\(rule.name)\" - invalid regex\n".utf8))
 }
 
-let portRules = config.rules.filter { $0.evidence == .portUnbound }
-    .compactMap { try? NSRegularExpression(pattern: $0.match) }
-let candidates = processes.filter { p in
-    portRules.contains { $0.firstMatch(in: p.command, range: NSRange(p.command.startIndex..., in: p.command)) != nil }
-}
+let candidates = classifier.portCandidates(in: processes)
 let cwds = Dictionary(uniqueKeysWithValues: candidates.compactMap { p in Probe.cwd(of: p.pid).map { (p.pid, $0) } })
 let context = Context(processes: processes, me: me, untouchable: untouchable,
                       listeners: candidates.isEmpty ? [:] : Probe.listeners(),
