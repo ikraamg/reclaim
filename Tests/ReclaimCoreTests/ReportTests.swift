@@ -80,5 +80,26 @@ final class ReportTests: XCTestCase {
         XCTAssertEqual(first["band"] as? String, "holding memory")
         XCTAssertEqual(first["rssMB"] as? Int, 412)
         XCTAssertEqual(first["action"] as? String, "terminated")
+
+        let reported = try XCTUnwrap(rows.first { ($0["pid"] as? Int) == 612 })
+        XCTAssertTrue(reported.keys.contains("action"))
+        XCTAssertTrue(reported["action"] is NSNull)
+    }
+
+    func testTextShowsMemoryHogsWhenSwapIsHot() {
+        let hog = ProcessRecord(pid: 900, ppid: 1, cpu: 0, rssKB: 3 * 1024 * 1024, age: 0, user: "me", command: "Google Chrome Helper (Renderer) --type=renderer")
+        let evaluation = Evaluation(findings: findings, unchanged: false, swapJustHot: true, state: RunState())
+        let r = RunReport(header: "swap 7.1/8.0GB (89%)  ·  up 1d 2h", evaluation: evaluation, dryRun: true, actions: [:], memoryHogs: [hog])
+        let text = TextReport.render(r)
+        XCTAssertTrue(text.hasPrefix("swap 7.1/8.0GB (89%)  ·  up 1d 2h\nswap is over 80%. Biggest resident processes, whoever they belong to:\n  900       3.0GB  Google Chrome Helper (Renderer) --type=renderer\n\nWOULD KILL (2)"))
+    }
+
+    func testTextUnchangedWithMemoryHogsAppendsHogsBlock() {
+        let hog = ProcessRecord(pid: 900, ppid: 1, cpu: 0, rssKB: 3 * 1024 * 1024, age: 0, user: "me", command: "Google Chrome Helper (Renderer) --type=renderer")
+        var state = RunState(); state.quietRuns = 3
+        let evaluation = Evaluation(findings: findings, unchanged: true, swapJustHot: true, state: state)
+        let r = RunReport(header: "swap 7.1/8.0GB (89%)  ·  up 1d 2h", evaluation: evaluation, dryRun: true, actions: [:], memoryHogs: [hog])
+        let text = TextReport.render(r)
+        XCTAssertTrue(text.hasPrefix("reclaim: same 3 item(s) as last run, unchanged for 3 runs.  swap 7.1/8.0GB (89%)  ·  up 1d 2h\nswap is over 80%. Biggest resident processes, whoever they belong to:\n"))
     }
 }

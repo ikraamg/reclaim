@@ -96,6 +96,29 @@ public enum JSONReport {
         let pid: Int32, ppid: Int32, category: String, verdict: String, reason: String
         let cpu: Double, rssMB: Int, ageSeconds: Int, age: String, band: String, user: String, command: String
         let action: String?
+
+        enum CodingKeys: String, CodingKey {
+            case pid, ppid, category, verdict, reason, cpu, rssMB, ageSeconds, age, band, user, command, action
+        }
+
+        // Every key must be present so agents get a fixed schema; encodeIfPresent would
+        // drop "action" entirely for REPORT rows instead of writing it as null.
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(pid, forKey: .pid)
+            try c.encode(ppid, forKey: .ppid)
+            try c.encode(category, forKey: .category)
+            try c.encode(verdict, forKey: .verdict)
+            try c.encode(reason, forKey: .reason)
+            try c.encode(cpu, forKey: .cpu)
+            try c.encode(rssMB, forKey: .rssMB)
+            try c.encode(ageSeconds, forKey: .ageSeconds)
+            try c.encode(age, forKey: .age)
+            try c.encode(band, forKey: .band)
+            try c.encode(user, forKey: .user)
+            try c.encode(command, forKey: .command)
+            try c.encode(action, forKey: .action)
+        }
     }
     struct Hog: Encodable { let pid: Int32, rssMB: Int, command: String }
     struct Body: Encodable {
