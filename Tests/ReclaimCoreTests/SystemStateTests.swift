@@ -25,6 +25,12 @@ final class SystemStateTests: XCTestCase {
         XCTAssertEqual(s.header(), "swap n/a  ·  up 10m")
     }
 
+    func testHeaderWithThermalButNoBattery() {
+        let s = SystemState(swapUsedMB: nil, swapTotalMB: nil, uptimeSeconds: 7200,
+                            batteryPercent: nil, batteryState: nil, thermal: ["CPU_Speed_Limit = 60"])
+        XCTAssertEqual(s.header(), "swap n/a  ·  up 2h 0m  ·  THERMAL: CPU_Speed_Limit = 60")
+    }
+
     func testLiveReadIsSane() {
         let s = SystemState.read()
         XCTAssertGreaterThan(s.uptimeSeconds, 0)

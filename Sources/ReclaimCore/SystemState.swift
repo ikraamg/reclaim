@@ -73,7 +73,8 @@ public struct SystemState: Equatable {
         let sources = IOPSCopyPowerSourcesList(info).takeRetainedValue() as [CFTypeRef]
         for source in sources {
             guard let d = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any],
-                  let percent = d[kIOPSCurrentCapacityKey] as? Int else { continue }
+                  let percent = d[kIOPSCurrentCapacityKey] as? Int,
+                  (d[kIOPSTypeKey] as? String) == kIOPSInternalBatteryType else { continue }
             let charging = d[kIOPSIsChargingKey] as? Bool ?? false
             let charged = d[kIOPSIsChargedKey] as? Bool ?? false
             let onAC = (d[kIOPSPowerSourceStateKey] as? String) == kIOPSACPowerValue
