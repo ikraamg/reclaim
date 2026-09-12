@@ -38,6 +38,8 @@ let dryRun = args.contains("--dry-run")
 let processes = ProcessSnapshot.live()
 let byPid = Dictionary(processes.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
 let me = shell(["id", "-un"]).trimmingCharacters(in: .whitespacesAndNewlines)
+if me.isEmpty { fail("reclaim: cannot determine the current user - refusing to run", code: 2) }
+if getuid() == 0 && !dryRun { fail("reclaim: refusing to kill as root - use --dry-run", code: 2) }
 
 // Never touch ourselves or anything above us in the tree.
 var untouchable = Ancestry.untouchable(from: getpid(), in: byPid)
@@ -49,7 +51,7 @@ for rule in classifier.invalidRules {
 }
 
 let candidates = classifier.portCandidates(in: processes)
-let cwds = Dictionary(uniqueKeysWithValues: candidates.compactMap { p in Probe.cwd(of: p.pid).map { (p.pid, $0) } })
+let cwds = Dictionary(candidates.compactMap { p in Probe.cwd(of: p.pid).map { (p.pid, $0) } }, uniquingKeysWith: { a, _ in a })
 let context = Context(processes: processes, me: me, untouchable: untouchable,
                       listeners: candidates.isEmpty ? [:] : Probe.listeners(),
                       cwds: cwds, worktreeNote: Worktree.note(cwd:))

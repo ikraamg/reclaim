@@ -71,6 +71,14 @@ final class ClassifierTests: XCTestCase {
         XCTAssertEqual(f?.reason, "nothing is listening on port 3111 (its worktree /repo/.worktrees/old is gone)")
     }
 
+    func testNeverKillNameWinsOverAMatchingKillRule() {
+        // Owned by us, not untouchable, orphaned and old — would be KILL but for the name.
+        let p = ProcessRecord(pid: 700, ppid: 1, cpu: 1, rssKB: 1000, age: 10 * 86400,
+                              user: "me", command: "zsh -c while :; do :; done # WindowServer")
+        let f = Classifier(config: Config()).classify(p, in: Context.forTests(processes: [p]))
+        XCTAssertNotEqual(f?.verdict, .kill)
+    }
+
     func testPortCandidatesOnlyReturnsPortUnboundMatches() {
         let puma = ProcessRecord(pid: 77, ppid: 1, cpu: 1, rssKB: 300_000, age: 864_000,
                                  user: "me", command: "puma 8.0.2 (tcp://localhost:3000) [core]")

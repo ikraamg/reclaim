@@ -11,13 +11,13 @@ swift_raw=$(.build/release/reclaim --dry-run --json) || { echo "parity: reclaim 
 case "$py_raw" in *swap*) ;; *) echo "parity: python output has no header"; exit 1;; esac
 case "$swift_raw" in *'"header"'*) ;; *) echo "parity: swift output has no header"; exit 1;; esac
 
-py=$(echo "$py_raw" | awk '/^    [0-9]+ /{print $1":"$2}' | sort)
+py=$(echo "$py_raw" | awk '/^(WOULD KILL|KILLED)/{v="KILL"} /^REPORTED/{v="REPORT"} /^    [0-9]+ /{print $1":"$2":"v}' | sort)
 swift=$(echo "$swift_raw" \
-  | /usr/bin/python3 -c 'import json,sys; [print("%d:%s" % (f["pid"], f["category"])) for f in json.load(sys.stdin)["findings"]]' \
+  | /usr/bin/python3 -c 'import json,sys; [print("%d:%s:%s" % (f["pid"], f["category"], f["verdict"])) for f in json.load(sys.stdin)["findings"]]' \
   | sort)
 
 if [ "$py" = "$swift" ]; then
-  echo "parity: identical finding set ($(echo "$py" | grep -c . || true) findings)"
+  echo "parity: identical finding set, verdicts included ($(echo "$py" | grep -c . || true) findings)"
 else
   echo "parity: MISMATCH"; echo "--- python"; echo "$py"; echo "--- swift"; echo "$swift"; exit 1
 fi
