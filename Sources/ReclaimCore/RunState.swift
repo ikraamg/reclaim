@@ -2,7 +2,7 @@ import Foundation
 
 public struct RunState: Codable, Equatable {
     public var quietRuns = 0
-    public var signature = ""
+    public var signature: String? = nil
     public var hot: [Int32] = []
     public var swapHot = false
 

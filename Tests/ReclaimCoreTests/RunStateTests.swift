@@ -49,6 +49,15 @@ final class RunStateTests: XCTestCase {
         XCTAssertEqual(Session.signature(of: a), "1:y:REPORT,2:x:KILL")
     }
 
+    func testFirstEverRunIsNeverUnchanged() {
+        let first = Session.evaluate([], previous: RunState(), swapHot: false, willKill: false)
+        XCTAssertFalse(first.unchanged)
+        XCTAssertEqual(first.state.quietRuns, 0)
+        let second = Session.evaluate([], previous: first.state, swapHot: false, willKill: false)
+        XCTAssertTrue(second.unchanged)
+        XCTAssertEqual(second.state.quietRuns, 1)
+    }
+
     func testPersistsRoundTrip() {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("st-\(UUID())/state.json")
         var s = RunState(); s.quietRuns = 7; s.hot = [3]
