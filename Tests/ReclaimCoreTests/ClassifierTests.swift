@@ -40,6 +40,27 @@ final class ClassifierTests: XCTestCase {
         XCTAssertNil(Classifier(config: Config()).classify(p, in: ctx))
     }
 
+    func testInvalidRuleRegexIsExposedNotSwallowed() {
+        var config = Config()
+        config.rules = [Rule(name: "broken", match: "(", minAgeSeconds: 1, evidence: .orphaned)]
+        let classifier = Classifier(config: config)
+        XCTAssertEqual(classifier.invalidRules.map(\.name), ["broken"])
+
+        let p = ProcessRecord(pid: 700, ppid: 1, cpu: 1, rssKB: 1000, age: 10,
+                              user: "me", command: "(")
+        XCTAssertNil(classifier.classify(p, in: Context.forTests(processes: [p])))
+    }
+
+    func testPortUnboundRuleWithNoCaptureGroupIsReportedNotJudged() {
+        var config = Config()
+        config.rules = [Rule(name: "dev-server", match: "^puma", minAgeSeconds: 900, evidence: .portUnbound)]
+        let p = ProcessRecord(pid: 701, ppid: 1, cpu: 1, rssKB: 300_000, age: 864_000,
+                              user: "me", command: "puma 8.0.2 (tcp://localhost:3111) [gone]")
+        let f = Classifier(config: config).classify(p, in: Context.forTests(processes: [p], listeners: [3000: [77]]))
+        XCTAssertEqual(f?.verdict, .report)
+        XCTAssertTrue(f?.reason.contains("no port capture group") ?? false)
+    }
+
     func testDevServerReasonCarriesWorktreeNote() {
         let p = ProcessRecord(pid: 500, ppid: 1, cpu: 1, rssKB: 300_000, age: 864_000,
                               user: "me", command: "puma 8.0.2 (tcp://localhost:3111) [gone]")

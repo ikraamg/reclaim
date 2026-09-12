@@ -34,12 +34,23 @@ public struct Classifier {
     let config: Config
     let compiled: [(Rule, NSRegularExpression)]
 
+    /// Rules dropped because their pattern failed to compile. Still dropped, but no longer silent.
+    public let invalidRules: [Rule]
+
     public init(config: Config) {
         self.config = config
         // A rule with a bad regex is dropped, never guessed at.
-        self.compiled = config.rules.compactMap { rule in
-            (try? NSRegularExpression(pattern: rule.match)).map { (rule, $0) }
+        var compiled: [(Rule, NSRegularExpression)] = []
+        var invalidRules: [Rule] = []
+        for rule in config.rules {
+            if let regex = try? NSRegularExpression(pattern: rule.match) {
+                compiled.append((rule, regex))
+            } else {
+                invalidRules.append(rule)
+            }
         }
+        self.compiled = compiled
+        self.invalidRules = invalidRules
     }
 
     public func classify(_ p: ProcessRecord, in ctx: Context) -> Finding? {
