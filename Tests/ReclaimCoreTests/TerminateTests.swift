@@ -30,4 +30,10 @@ final class TerminateTests: XCTestCase {
         child.waitUntilExit()
         XCTAssertEqual(Terminate.run(pid: child.processIdentifier, grace: 0.1), "already gone")
     }
+
+    func testRefusesGroupAndSystemPids() {
+        XCTAssertEqual(Terminate.run(pid: 0, grace: 0.1), "refused: pid 0 is not a single user process")
+        XCTAssertEqual(Terminate.run(pid: -5, grace: 0.1), "refused: pid -5 is not a single user process")
+        XCTAssertEqual(Terminate.run(pid: 1, grace: 0.1), "refused: pid 1 is not a single user process")
+    }
 }

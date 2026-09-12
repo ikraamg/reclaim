@@ -3,6 +3,7 @@ import Foundation
 public enum Terminate {
     /// SIGTERM, wait `grace`, SIGKILL if it is still there.
     public static func run(pid: Int32, grace: TimeInterval = 2) -> String {
+        guard pid > 1 else { return "refused: pid \(pid) is not a single user process" }
         if kill(pid, SIGTERM) != 0 {
             return errno == ESRCH ? "already gone" : String(cString: strerror(errno))
         }
