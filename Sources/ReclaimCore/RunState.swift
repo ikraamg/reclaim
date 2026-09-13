@@ -29,6 +29,10 @@ public struct Evaluation: Equatable, Sendable {
     public var unchanged: Bool
     public var swapJustHot: Bool
     public var state: RunState
+
+    public init(findings: [Finding], unchanged: Bool, swapJustHot: Bool, state: RunState) {
+        self.findings = findings; self.unchanged = unchanged; self.swapJustHot = swapJustHot; self.state = state
+    }
 }
 
 public enum Session {

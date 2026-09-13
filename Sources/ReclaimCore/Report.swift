@@ -38,11 +38,15 @@ public struct RunReport: Sendable {
     public var dryRun: Bool
     public var actions: [Int32: String]
     public var memoryHogs: [ProcessRecord]
+    public var processCount: Int
+    public var invalidRules: [Rule]
     public var hint: String? = nil
 
-    public init(header: String, evaluation: Evaluation, dryRun: Bool, actions: [Int32: String], memoryHogs: [ProcessRecord], hint: String? = nil) {
+    public init(header: String, evaluation: Evaluation, dryRun: Bool, actions: [Int32: String], memoryHogs: [ProcessRecord],
+                processCount: Int = 0, invalidRules: [Rule] = [], hint: String? = nil) {
         self.header = header; self.evaluation = evaluation; self.dryRun = dryRun
-        self.actions = actions; self.memoryHogs = memoryHogs; self.hint = hint
+        self.actions = actions; self.memoryHogs = memoryHogs; self.processCount = processCount
+        self.invalidRules = invalidRules; self.hint = hint
     }
 }
 
