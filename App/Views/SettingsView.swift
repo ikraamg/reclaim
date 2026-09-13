@@ -7,6 +7,7 @@ final class SettingsModel: ObservableObject {
     @Published var autoKill: Bool
     @Published var startAtLogin = LoginItem.isEnabled
     @Published var loginNeedsApproval = LoginItem.needsApproval
+    @Published var cliStatus = CLIInstall.status
     @Published var message: String?
 
     init(config: Config) {
@@ -36,6 +37,11 @@ final class SettingsModel: ObservableObject {
         }
         loginNeedsApproval = LoginItem.needsApproval
     }
+
+    func installCLI() {
+        do { try CLIInstall.install(); message = nil } catch { message = "could not install the CLI: \(error.localizedDescription)" }
+        cliStatus = CLIInstall.status
+    }
 }
 
 struct SettingsView: View {
@@ -60,6 +66,18 @@ struct SettingsView: View {
                         Button("Open") { LoginItem.openSystemSettings() }
                     }
                 }
+            }
+            Section("Command line") {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("~/.local/bin/reclaim").font(.system(.body, design: .monospaced))
+                        Text(model.cliStatus).font(.callout).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Install") { model.installCLI() }
+                }
+                Text("`reclaim --dry-run --json` and the rest of the CLI, run by this app's binary.")
+                    .font(.callout).foregroundStyle(.secondary)
             }
             if let message = model.message {
                 Text(message).font(.callout).foregroundStyle(.secondary)
