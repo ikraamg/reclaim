@@ -77,5 +77,8 @@ if !dryRun && !evaluation.unchanged {
     }
 }
 let hogs = swapHot ? Array(processes.sorted { $0.rssKB > $1.rssKB }.prefix(5)) : []
-let report = RunReport(header: system.header(), evaluation: evaluation, dryRun: dryRun, actions: actions, memoryHogs: hogs)
+var report = RunReport(header: system.header(), evaluation: evaluation, dryRun: dryRun, actions: actions, memoryHogs: hogs)
+if !args.contains("--dry-run") && dryRun && evaluation.findings.contains(where: { $0.verdict == .kill }) {
+    report.hint = "reporting only - set \"autoKill\": true in config or pass --kill"
+}
 print(json ? JSONReport.render(report) : TextReport.render(report), terminator: "")

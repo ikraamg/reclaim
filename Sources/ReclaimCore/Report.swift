@@ -38,10 +38,11 @@ public struct RunReport {
     public var dryRun: Bool
     public var actions: [Int32: String]
     public var memoryHogs: [ProcessRecord]
+    public var hint: String? = nil
 
-    public init(header: String, evaluation: Evaluation, dryRun: Bool, actions: [Int32: String], memoryHogs: [ProcessRecord]) {
+    public init(header: String, evaluation: Evaluation, dryRun: Bool, actions: [Int32: String], memoryHogs: [ProcessRecord], hint: String? = nil) {
         self.header = header; self.evaluation = evaluation; self.dryRun = dryRun
-        self.actions = actions; self.memoryHogs = memoryHogs
+        self.actions = actions; self.memoryHogs = memoryHogs; self.hint = hint
     }
 }
 
@@ -85,6 +86,7 @@ public enum TextReport {
             // Blank line separates groups; no trailing blank line after the last one.
             if index < groups.count - 1 { out += "\n" }
         }
+        if let hint = r.hint { out += hint + "\n" }
         return out
     }
 
@@ -131,6 +133,25 @@ public enum JSONReport {
     struct Body: Encodable {
         let header: String, dryRun: Bool, unchanged: Bool, quietRuns: Int, swapJustHot: Bool
         let findings: [Row], memoryHogs: [Hog]
+        let hint: String?
+
+        enum CodingKeys: String, CodingKey {
+            case header, dryRun, unchanged, quietRuns, swapJustHot, findings, memoryHogs, hint
+        }
+
+        // Every key must be present so agents get a fixed schema; encodeIfPresent would
+        // drop "hint" entirely when there is none instead of writing it as null.
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            try c.encode(header, forKey: .header)
+            try c.encode(dryRun, forKey: .dryRun)
+            try c.encode(unchanged, forKey: .unchanged)
+            try c.encode(quietRuns, forKey: .quietRuns)
+            try c.encode(swapJustHot, forKey: .swapJustHot)
+            try c.encode(findings, forKey: .findings)
+            try c.encode(memoryHogs, forKey: .memoryHogs)
+            try c.encode(hint, forKey: .hint)
+        }
     }
 
     public static func render(_ r: RunReport) -> String {
@@ -143,7 +164,7 @@ public enum JSONReport {
         let hogs = r.memoryHogs.map { Hog(pid: $0.pid, rssMB: $0.rssKB / 1024, command: $0.command) }
         let body = Body(header: r.header, dryRun: r.dryRun, unchanged: r.evaluation.unchanged,
                         quietRuns: r.evaluation.state.quietRuns, swapJustHot: r.evaluation.swapJustHot,
-                        findings: rows, memoryHogs: hogs)
+                        findings: rows, memoryHogs: hogs, hint: r.hint)
         return jsonString(body)
     }
 }

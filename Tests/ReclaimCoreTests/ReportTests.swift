@@ -94,6 +94,14 @@ final class ReportTests: XCTestCase {
         XCTAssertTrue(text.hasPrefix("swap 7.1/8.0GB (89%)  ·  up 1d 2h\nswap is over 80%. Biggest resident processes, whoever they belong to:\n  900       3.0GB  Google Chrome Helper (Renderer) --type=renderer\n\nWOULD KILL (2)"))
     }
 
+    func testHintIsPrintedAfterFindings() {
+        var r = report(dryRun: true)
+        r.hint = "reporting only - set \"autoKill\": true in config or pass --kill"
+        let text = TextReport.render(r)
+        XCTAssertTrue(text.hasSuffix("\nreporting only - set \"autoKill\": true in config or pass --kill\n"))
+        XCTAssertTrue(JSONReport.render(r).contains("\"hint\" : \"reporting only"))
+    }
+
     func testTextUnchangedWithMemoryHogsAppendsHogsBlock() {
         let hog = ProcessRecord(pid: 900, ppid: 1, cpu: 0, rssKB: 3 * 1024 * 1024, age: 0, user: "me", command: "Google Chrome Helper (Renderer) --type=renderer")
         var state = RunState(); state.quietRuns = 3
