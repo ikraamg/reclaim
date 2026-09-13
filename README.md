@@ -1,7 +1,7 @@
 # reclaim
 
 Finds and kills wasted local processes on a Mac, and reports what is eating disk and what starts at login.
-Swift, no dependencies. A menu bar app is coming; today it is a CLI.
+Swift, no dependencies. Ships as a menu bar app and a CLI that share one core.
 
 ## What it does
 
@@ -21,6 +21,22 @@ Swift, no dependencies. A menu bar app is coming; today it is a CLI.
 ## Install
 
     scripts/install.sh      # builds release, copies to ~/.local/bin/reclaim, runs --self-check
+
+## App
+
+    scripts/build-app.sh    # xcodegen + xcodebuild; prints the bundle path, then `open` it
+
+A status item: a hollow square when there is nothing to kill, a filled one with the count when there is. The
+popover shows the same findings as the CLI; Kill asks twice. It runs the process pass every 30s (`pollSeconds`),
+reloads `config.json` when it changes and keeps the last good one if the file breaks. Settings covers the
+interval, `autoKill`, start at login, and installing `~/.local/bin/reclaim` as a shim that runs the app's
+binary (`Reclaim --dry-run` and every other flag work on the bundle's executable directly).
+
+The app is ad-hoc signed for now, so a login item registered by one build may stop launching after the next
+build until it is toggled again; a stable signing identity fixes that.
+
+    Reclaim --render findings out.png [--dark]   # draw a popover fixture; fixtures: findings killed empty unchanged badConfig swap
+    scripts/render-fixtures.sh [dir]             # all of them, light and dark
 
 ## Config
 
