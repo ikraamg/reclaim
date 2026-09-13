@@ -15,10 +15,31 @@ final class ConfigTests: XCTestCase {
         XCTAssertTrue(c.respawnsClean.contains("duetexpertd"))
     }
 
+    func testBootAndDiskDefaultsMatchTheScript() {
+        let c = Config()
+        XCTAssertEqual(c.boot.keep, ["homebrew.mxcl.", "com.grammarly.", "com.ikraam.", "com.logi.optionsplus",
+                                     "com.docker.", "com.nordvpn.macos.helper", "us.zoom.ZoomDaemon"])
+        XCTAssertEqual(c.boot.cpuHog.percent, 50); XCTAssertEqual(c.boot.cpuHog.minAgeSeconds, 1800)
+        XCTAssertEqual(c.disk.worktreeStaleDays, 21)
+        XCTAssertEqual(c.disk.regenerableInRepo, ["tmp", "log", "node_modules", "coverage"])
+        XCTAssertTrue(c.disk.volumeIsData.contains("pgdata")); XCTAssertTrue(c.disk.volumeIsRebuildable.contains("node_modules"))
+        XCTAssertEqual(c.disk.caches.count, 11)
+        XCTAssertEqual(c.disk.caches[0].path, "~/Library/Developer/Xcode/DerivedData")
+        XCTAssertEqual(c.disk.caches[0].command, "rm -rf ~/Library/Developer/Xcode/DerivedData/*")
+    }
+
+    func testPartialDiskSectionKeepsOtherDefaults() throws {
+        let c = try JSONDecoder().decode(Config.self, from: Data(#"{"disk":{"worktreeStaleDays":7}}"#.utf8))
+        XCTAssertEqual(c.disk.worktreeStaleDays, 7)
+        XCTAssertEqual(c.disk.caches.count, 11)
+        XCTAssertEqual(c.boot.keep.count, 7)
+    }
+
     func testRoundTripsThroughJSON() throws {
         var c = Config()
         c.autoKill = true
         c.rules.append(Rule(name: "vite", match: "vite --port (\\d+)", minAgeSeconds: 600, evidence: .portUnbound))
+        c.disk.worktreeStaleDays = 3
         let data = try JSONEncoder().encode(c)
         XCTAssertEqual(try JSONDecoder().decode(Config.self, from: data), c)
     }

@@ -39,6 +39,74 @@ public struct Wedged: Codable, Equatable {
     }
 }
 
+public struct CacheEntry: Codable, Equatable {
+    public var path: String, command: String, note: String
+    public init(path: String, command: String, note: String) { self.path = path; self.command = command; self.note = note }
+
+    // Rebuilt or re-downloaded on demand. Nothing here is deleted automatically.
+    public static let defaults: [CacheEntry] = [
+        CacheEntry(path: "~/Library/Developer/Xcode/DerivedData", command: "rm -rf ~/Library/Developer/Xcode/DerivedData/*", note: "rebuilt on next build"),
+        CacheEntry(path: "~/Library/Developer/Xcode/iOS DeviceSupport", command: "rm -rf ~/Library/Developer/Xcode/'iOS DeviceSupport'/*", note: "old iOS symbols"),
+        CacheEntry(path: "~/.npm/_cacache", command: "npm cache clean --force", note: "re-downloaded on demand"),
+        CacheEntry(path: "~/.npm/_npx", command: "rm -rf ~/.npm/_npx", note: "npx cache - stop MCP servers first"),
+        CacheEntry(path: "~/.cache/uv", command: "uv cache clean", note: "python wheels - prune only drops unused, clean takes the lot"),
+        CacheEntry(path: "~/Library/Caches/Yarn", command: "yarn cache clean", note: ""),
+        CacheEntry(path: "~/Library/Caches/Homebrew", command: "brew cleanup -s", note: "downloaded bottles"),
+        CacheEntry(path: "~/Library/pnpm", command: "pnpm store prune", note: ""),
+        CacheEntry(path: "~/Library/Caches/pip", command: "pip cache purge", note: ""),
+        CacheEntry(path: "~/Library/Caches/go-build", command: "go clean -cache", note: ""),
+        CacheEntry(path: "~/.Trash", command: "rm -rf ~/.Trash/*", note: "Trash"),
+    ]
+}
+
+public struct CPUHog: Codable, Equatable {
+    public var percent: Double = 50
+    public var minAgeSeconds: Int = 1800
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        percent = try c.decodeIfPresent(Double.self, forKey: .percent) ?? 50
+        minAgeSeconds = try c.decodeIfPresent(Int.self, forKey: .minAgeSeconds) ?? 1800
+    }
+}
+
+public struct Boot: Codable, Equatable {
+    // Launch agents/daemons already said yes to; anything else non-Apple is listed.
+    public var keep = ["homebrew.mxcl.", "com.grammarly.", "com.ikraam.", "com.logi.optionsplus",
+                       "com.docker.", "com.nordvpn.macos.helper", "us.zoom.ZoomDaemon"]
+    public var cpuHog = CPUHog()
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Boot()
+        keep = try c.decodeIfPresent([String].self, forKey: .keep) ?? d.keep
+        cpuHog = try c.decodeIfPresent(CPUHog.self, forKey: .cpuHog) ?? d.cpuHog
+    }
+}
+
+public struct Disk: Codable, Equatable {
+    public var worktreeRoot = "~/Documents/GitHub"
+    public var worktreeStaleDays = 21
+    public var regenerableInRepo = ["tmp", "log", "node_modules", "coverage"]
+    // A docker volume named like data is somebody's database.
+    public var volumeIsData = ["_data", "_db", "pgdata", "postgres", "mysql", "mariadb", "redis",
+                               "clickhouse", "minio", "storage", "esdata", "elastic"]
+    public var volumeIsRebuildable = ["node_modules", "bundle", "_cache", "cache_", "tmp", "build",
+                                      "public_assets", "assets"]
+    public var caches = CacheEntry.defaults
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Disk()
+        worktreeRoot = try c.decodeIfPresent(String.self, forKey: .worktreeRoot) ?? d.worktreeRoot
+        worktreeStaleDays = try c.decodeIfPresent(Int.self, forKey: .worktreeStaleDays) ?? d.worktreeStaleDays
+        regenerableInRepo = try c.decodeIfPresent([String].self, forKey: .regenerableInRepo) ?? d.regenerableInRepo
+        volumeIsData = try c.decodeIfPresent([String].self, forKey: .volumeIsData) ?? d.volumeIsData
+        volumeIsRebuildable = try c.decodeIfPresent([String].self, forKey: .volumeIsRebuildable) ?? d.volumeIsRebuildable
+        caches = try c.decodeIfPresent([CacheEntry].self, forKey: .caches) ?? d.caches
+    }
+}
+
 public enum ConfigError: Error, Equatable {
     case unreadable(URL)
     case invalid(String)
@@ -51,6 +119,8 @@ public struct Config: Codable, Equatable {
     public var wedged = Wedged()
     public var neverKill = ["launchd", "kernel_task", "loginwindow", "WindowServer"]
     public var respawnsClean = ["duetexpertd", "System Events", "mdworker", "mds_stores", "sharingd"]
+    public var boot = Boot()
+    public var disk = Disk()
 
     public init() {}
 
@@ -63,6 +133,8 @@ public struct Config: Codable, Equatable {
         wedged = try c.decodeIfPresent(Wedged.self, forKey: .wedged) ?? d.wedged
         neverKill = try c.decodeIfPresent([String].self, forKey: .neverKill) ?? d.neverKill
         respawnsClean = try c.decodeIfPresent([String].self, forKey: .respawnsClean) ?? d.respawnsClean
+        boot = try c.decodeIfPresent(Boot.self, forKey: .boot) ?? d.boot
+        disk = try c.decodeIfPresent(Disk.self, forKey: .disk) ?? d.disk
     }
 
     public static let defaultURL = FileManager.default
