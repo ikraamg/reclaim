@@ -24,14 +24,18 @@ if args.contains("--self-check") {
     fail(failures.joined(separator: "\n"), code: 1)
 }
 
-if args.contains("--disk") || args.contains("--boot") {
-    fail("not ported yet - run /usr/bin/python3 ~/.claude/skills/reclaim/reclaim.py \(args.contains("--disk") ? "--disk" : "--boot")", code: 2)
-}
-
 let config: Config
 switch Config.load() {
 case .success(let c): config = c
 case .failure(let e): fail("reclaim: config unreadable, refusing to guess: \(e)", code: 2)
+}
+
+if args.contains("--disk") || args.contains("--boot") {
+    let sweep = args.contains("--disk")
+        ? DiskSweep.run(disk: config.disk)
+        : BootSweep.run(boot: config.boot, header: SystemState.read().header())
+    print(json ? SweepReport.json(sweep) : SweepReport.text(sweep), terminator: "")
+    exit(0)
 }
 
 let dryRun = args.contains("--dry-run")
