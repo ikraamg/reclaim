@@ -101,6 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         settingsModel.pollSeconds = model.monitor.config.pollSeconds
         settingsModel.autoKill = model.monitor.config.autoKill
+        settingsModel.startAtLogin = LoginItem.isEnabled
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
     }

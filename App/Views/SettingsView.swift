@@ -5,6 +5,8 @@ import ReclaimCore
 final class SettingsModel: ObservableObject {
     @Published var pollSeconds: Int
     @Published var autoKill: Bool
+    @Published var startAtLogin = LoginItem.isEnabled
+    @Published var loginNeedsApproval = LoginItem.needsApproval
     @Published var message: String?
 
     init(config: Config) {
@@ -23,6 +25,17 @@ final class SettingsModel: ObservableObject {
             do { try config.save(); message = nil } catch { message = "could not write config.json: \(error)" }
         }
     }
+
+    func applyLoginItem() {
+        do {
+            try LoginItem.set(startAtLogin)
+            message = nil
+        } catch {
+            startAtLogin = LoginItem.isEnabled
+            message = "could not change the login item: \(error.localizedDescription)"
+        }
+        loginNeedsApproval = LoginItem.needsApproval
+    }
 }
 
 struct SettingsView: View {
@@ -40,6 +53,13 @@ struct SettingsView: View {
                 Toggle("Kill automatically", isOn: Binding(get: { model.autoKill }, set: { model.autoKill = $0; model.save() }))
                 Text("Rows marked KILL are terminated on the next check without asking. Off, they wait for the Kill button.")
                     .font(.callout).foregroundStyle(.secondary)
+                Toggle("Start at login", isOn: Binding(get: { model.startAtLogin }, set: { model.startAtLogin = $0; model.applyLoginItem() }))
+                if model.loginNeedsApproval {
+                    HStack {
+                        Text("Waiting for approval in System Settings.").font(.callout).foregroundStyle(.secondary)
+                        Button("Open") { LoginItem.openSystemSettings() }
+                    }
+                }
             }
             if let message = model.message {
                 Text(message).font(.callout).foregroundStyle(.secondary)
