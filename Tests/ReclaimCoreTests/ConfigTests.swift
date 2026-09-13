@@ -87,4 +87,20 @@ final class ConfigTests: XCTestCase {
         let old = Data(#"{"rules":[{"name":"x","match":"x","minAgeSeconds":1,"evidence":"parentDead"}]}"#.utf8)
         XCTAssertThrowsError(try JSONDecoder().decode(Config.self, from: old))
     }
+
+    func testSavePreservesKeysItDoesNotKnow() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("keep-\(UUID())/config.json")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data(#"{"alerts":{"cpu":{"percent":50}},"disk":{"worktreeStaleDays":7,"futureKnob":true},"pollSeconds":60}"#.utf8).write(to: url)
+        var c = try Config.load(from: url).get()
+        c.pollSeconds = 15
+        try c.save(to: url)
+        let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertEqual(obj["pollSeconds"] as? Int, 15)
+        XCTAssertNotNil(obj["alerts"])
+        let disk = try XCTUnwrap(obj["disk"] as? [String: Any])
+        XCTAssertEqual(disk["worktreeStaleDays"] as? Int, 7)
+        XCTAssertEqual(disk["futureKnob"] as? Bool, true)
+        XCTAssertEqual(try Config.load(from: url).get(), c)
+    }
 }

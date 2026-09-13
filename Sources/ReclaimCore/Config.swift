@@ -153,11 +153,20 @@ public struct Config: Codable, Equatable {
         }
     }
 
+    /// Writes the known keys over whatever is already in the file, so a hand-added key survives a Settings save.
     public func save(to url: URL = defaultURL) throws {
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
-                                                withIntermediateDirectories: true)
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(self).write(to: url, options: .atomic)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var merged = (try? JSONSerialization.jsonObject(with: Data(contentsOf: url))) as? [String: Any] ?? [:]
+        let known = try JSONSerialization.jsonObject(with: JSONEncoder().encode(self)) as? [String: Any] ?? [:]
+        for (key, value) in known {
+            if var section = merged[key] as? [String: Any], let updates = value as? [String: Any] {
+                updates.forEach { section[$0] = $1 }
+                merged[key] = section
+            } else {
+                merged[key] = value
+            }
+        }
+        let data = try JSONSerialization.data(withJSONObject: merged, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        try data.write(to: url, options: .atomic)
     }
 }
