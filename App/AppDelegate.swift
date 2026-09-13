@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let popover = NSPopover()
     private var model: AppModel!
     private var subscriptions: Set<AnyCancellable> = []
+    private var configWatcher: ConfigWatcher?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let config: Config
@@ -42,7 +43,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] in self?.showCount($0.killCount) }
             .store(in: &subscriptions)
         showCount(0)
+        configWatcher = ConfigWatcher(fileURL: Config.defaultURL) { [weak self] in self?.reloadConfig() }
+        configWatcher?.start()
         model.start()
+    }
+
+    private func reloadConfig() {
+        switch Config.load() {
+        case .success(let config): model.apply(config: config)
+        case .failure(let error): model.reject(configMessage: String(describing: error))
+        }
     }
 
     private func showCount(_ count: Int) {
