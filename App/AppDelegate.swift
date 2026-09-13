@@ -42,8 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
         statusItem = item
-        model.$monitor.receive(on: DispatchQueue.main)
-            .sink { [weak self] in self?.showCount($0.killCount) }
+        model.$monitor.sink { [weak self] in self?.showCount($0.killCount) }
             .store(in: &subscriptions)
         showCount(0)
         configWatcher = ConfigWatcher(fileURL: Config.defaultURL) { [weak self] in self?.reloadConfig() }

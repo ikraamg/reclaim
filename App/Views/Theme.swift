@@ -2,7 +2,6 @@ import SwiftUI
 
 enum Theme {
     static let popoverWidth: CGFloat = 400
-    static let label = Font.system(.body)
     static let labelMedium = Font.system(.body).weight(.medium)
     static let secondary = Font.system(.callout)
     static let mono = Font.system(.callout, design: .monospaced)
