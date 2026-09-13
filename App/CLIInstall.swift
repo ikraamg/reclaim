@@ -1,13 +1,13 @@
 import Foundation
 
-/// Puts `reclaim` on PATH as a shim that runs this bundle's binary, so the CLI and the app never drift apart.
+/// Puts `reclaim` on PATH as a shim that runs this bundle's binary in CLI mode, so the CLI and the app never drift apart.
 enum CLIInstall {
     static let target = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin/reclaim")
 
     static var executable: String { Bundle.main.executableURL?.path ?? "" }
 
     static func install() throws {
-        let shim = "#!/bin/sh\nexec \"\(executable)\" \"$@\"\n"
+        let shim = "#!/bin/sh\nexec \"\(executable)\" --cli \"$@\"\n"
         try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
         try shim.write(to: target, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: target.path)
