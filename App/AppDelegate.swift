@@ -10,8 +10,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var model: AppModel!
     private var subscriptions: Set<AnyCancellable> = []
     private var configWatcher: ConfigWatcher?
+    private var settingsWindow: NSWindow?
+    private lazy var settingsModel = SettingsModel(config: model.monitor.config)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = mainMenu()
         let config: Config
         var configError: String?
         switch Config.load() {
@@ -77,18 +80,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showMenu() {
         guard let statusItem else { return }
         let menu = NSMenu()
-        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: "")
+        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit Reclaim", action: #selector(NSApplication.terminate(_:)), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Quit Reclaim", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
         defer { statusItem.menu = nil }
         statusItem.button?.performClick(nil)
     }
 
     @objc func openSettings() {
-        // Task 10
+        if settingsWindow == nil {
+            let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(model: settingsModel)))
+            window.title = "Reclaim Settings"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            settingsWindow = window
+        }
+        settingsModel.pollSeconds = model.monitor.config.pollSeconds
+        settingsModel.autoKill = model.monitor.config.autoKill
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func mainMenu() -> NSMenu {
+        let menu = NSMenu()
+        let app = NSMenuItem()
+        app.submenu = NSMenu()
+        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        settings.target = self
+        app.submenu?.addItem(settings)
+        app.submenu?.addItem(.separator())
+        app.submenu?.addItem(NSMenuItem(title: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
+        app.submenu?.addItem(NSMenuItem(title: "Quit Reclaim", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(app)
+        return menu
     }
 }
 
