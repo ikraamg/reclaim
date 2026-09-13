@@ -56,8 +56,6 @@ public enum SweepReport {
     }
 
     public static func json(_ s: Sweep) -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: (try? encoder.encode(s)) ?? Data("{}".utf8), as: UTF8.self)
+        jsonString(s)
     }
 }

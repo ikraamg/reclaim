@@ -78,7 +78,7 @@ public struct Classifier {
         let old = p.age >= rule.minAgeSeconds
         if let floor = rule.minCPU, p.cpu < floor {
             return Finding(process: p, category: rule.name, verdict: .report,
-                           reason: String(format: "%.0f%% CPU is below the %.0f%% floor for this rule", p.cpu, floor))
+                           reason: String(format: "%.1f%% CPU is below the %.0f%% floor for this rule", p.cpu, floor))
         }
         switch rule.evidence {
         case .orphaned:

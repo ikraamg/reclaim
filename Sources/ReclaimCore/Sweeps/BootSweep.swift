@@ -12,7 +12,7 @@ public enum BootSweep {
     static func cpuHogs(_ boot: Boot) -> SweepSection {
         let lines = BootParse.cpuHogs(ProcessSnapshot.live(), boot: boot).flatMap { p, hint -> [SweepLine] in
             let comm = ((p.command.split(separator: " ").first.map(String.init) ?? "") as NSString).lastPathComponent
-            var out = [SweepLine(text: "  \(DiskSweep.pad(String(p.pid), 6)) \(String(format: "%5.0f", p.cpu))%cpu  \(DiskSweep.pad(human(age: p.age), 8)) \(comm)", command: nil)]
+            var out = [SweepLine(text: "  \(pad(String(p.pid), 6)) \(String(format: "%5.0f", p.cpu))%cpu  \(pad(human(age: p.age), 8)) \(comm)", command: nil)]
             if !hint.isEmpty { out.append(SweepLine(text: "            " + hint, command: nil)) }
             return out
         }
@@ -29,10 +29,10 @@ public enum BootSweep {
     static func launchAgents(_ boot: Boot) -> SweepSection {
         var lines: [SweepLine] = []
         for folder in ["~/Library/LaunchAgents", "/Library/LaunchAgents", "/Library/LaunchDaemons"] {
-            let path = folder.hasPrefix("~") ? NSHomeDirectory() + folder.dropFirst() : folder
+            let path = (folder as NSString).expandingTildeInPath
             guard let names = try? FileManager.default.contentsOfDirectory(atPath: path) else { continue }
             for item in BootParse.launchItems(folder: folder, names: names, keep: boot.keep) {
-                lines.append(SweepLine(text: "  \(DiskSweep.pad(item.path, 62)) \(item.unloadCommand)", command: item.unloadCommand))
+                lines.append(SweepLine(text: "  \(pad(item.path, 62)) \(item.unloadCommand)", command: item.unloadCommand))
             }
         }
         return SweepSection(title: "launch agents/daemons outside boot.keep (unload, then move the plist to the Trash)", bytes: nil, lines: lines)
@@ -41,7 +41,7 @@ public enum BootSweep {
     static func systemExtensions() -> SweepSection {
         let db = shell(["/usr/bin/plutil", "-p", "/Library/SystemExtensions/db.plist"])
         let lines = BootParse.orphanedExtensions(db) { FileManager.default.fileExists(atPath: $0) }.flatMap { o in
-            [SweepLine(text: "  \(DiskSweep.pad(o.state, 22)) app gone: \(o.originApp)", command: nil),
+            [SweepLine(text: "  \(pad(o.state, 22)) app gone: \(o.originApp)", command: nil),
              SweepLine(text: "            reinstall the signed app, LAUNCH it, then Finder-trash it while it runs (systemextensionsctl uninstall needs SIP off)", command: nil)]
         }
         return SweepSection(title: "orphaned system extensions", bytes: nil, lines: lines)
@@ -57,7 +57,7 @@ public enum BootSweep {
             let bytes = DiskSweep.duBytes(path)
             guard bytes >= 100_000_000 else { continue }
             let cmd = "rm -rf \(path)"
-            lines.append(SweepLine(text: "  \(gigabytes(bytes))  \(DiskSweep.pad(path, 40)) \(cmd)   (data dir of a version that is not running)", command: cmd))
+            lines.append(SweepLine(text: "  \(gigabytes(bytes))  \(pad(path, 40)) \(cmd)   (data dir of a version that is not running)", command: cmd))
         }
         return SweepSection(title: "homebrew data dirs of stopped postgres versions", bytes: nil, lines: lines)
     }

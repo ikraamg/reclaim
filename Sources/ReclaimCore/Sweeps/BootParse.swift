@@ -29,7 +29,7 @@ public enum BootParse {
 
     /// Non-Apple plists not prefixed by anything in `keep`, each with the launchctl line that unloads it.
     public static func launchItems(folder: String, names: [String], keep: [String]) -> [LaunchItem] {
-        let expanded = folder.hasPrefix("~") ? NSHomeDirectory() + folder.dropFirst() : folder
+        let expanded = (folder as NSString).expandingTildeInPath
         return names.sorted().compactMap { name in
             guard name.hasSuffix(".plist") else { return nil }
             let label = String(name.dropLast(6))

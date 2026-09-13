@@ -13,6 +13,9 @@ let known: Set<String> = ["--dry-run", "--json", "--self-check", "--disk", "--bo
 if let stray = args.subtracting(known).sorted().first {
     fail("reclaim: unknown flag \(stray) - refusing to run", code: 2)
 }
+if args.contains("--disk") && args.contains("--boot") {
+    fail("reclaim: pick one of --disk or --boot", code: 2)
+}
 
 if args.contains("--self-check") {
     let failures = SelfCheck.failures()

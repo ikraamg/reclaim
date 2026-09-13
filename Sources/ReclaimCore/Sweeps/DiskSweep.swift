@@ -3,17 +3,13 @@ import Foundation
 public enum DiskSweep {
     static let home = FileManager.default.homeDirectoryForCurrentUser.path
 
-    static func expand(_ path: String) -> String {
-        path.hasPrefix("~") ? home + path.dropFirst() : path
-    }
-
     static func tilde(_ path: String) -> String {
         path.hasPrefix(home) ? "~" + path.dropFirst(home.count) : path
     }
 
-    static func shq(_ path: String) -> String { "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'" }
+    static func shellQuoted(_ path: String) -> String { "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'" }
 
-    static func gb(_ bytes: Int64) -> String { gigabytes(bytes).trimmingCharacters(in: .whitespaces) }
+    static func gigabytesTrimmed(_ bytes: Int64) -> String { gigabytes(bytes).trimmingCharacters(in: .whitespaces) }
 
     static func duBytes(_ path: String) -> Int64 { DiskParse.duTotal(shell(["/usr/bin/du", "-sxk", path], timeout: 60)) }
 
@@ -33,7 +29,7 @@ public enum DiskSweep {
         }
         var sections = [docker(disk), worktrees(disk), caches(disk)]
         sections.sort { ($0.bytes ?? 0) > ($1.bytes ?? 0) }
-        var footer = ["total reclaimable: \(gb(sections.reduce(0) { $0 + ($1.bytes ?? 0) }))"]
+        var footer = ["total reclaimable: \(gigabytesTrimmed(sections.reduce(0) { $0 + ($1.bytes ?? 0) }))"]
         if !shell(["sh", "-c", "command -v mo"]).isEmpty {
             footer.append("not counted above, mole owns these (interactive, both take --dry-run):")
             footer.append("  mo clean    caches this table misses - app leftovers, iOS backups, conda, maven")
@@ -83,11 +79,11 @@ public enum DiskSweep {
     static func worktrees(_ disk: Disk) -> SweepSection {
         var lines: [SweepLine] = []
         var staleTotal: Int64 = 0
-        let root = expand(disk.worktreeRoot)
+        let root = (disk.worktreeRoot as NSString).expandingTildeInPath
         let roots = ((try? FileManager.default.contentsOfDirectory(atPath: root)) ?? [])
             .filter { $0.hasSuffix(".worktrees") }.sorted().map { root + "/" + $0 }
         for worktreeRoot in roots {
-            let sizes = DiskParse.duChildren(shell(["sh", "-c", "/usr/bin/du -sxk \(shq(worktreeRoot))/*/ 2>/dev/null"], timeout: 120))
+            let sizes = DiskParse.duChildren(shell(["sh", "-c", "/usr/bin/du -sxk \(shellQuoted(worktreeRoot))/*/ 2>/dev/null"], timeout: 120))
             if sizes.isEmpty { continue }
             let repoName = (worktreeRoot as NSString).lastPathComponent.replacingOccurrences(of: ".worktrees", with: "")
             let repo = (worktreeRoot as NSString).deletingLastPathComponent + "/" + repoName
@@ -102,18 +98,18 @@ public enum DiskSweep {
             let total = sizes.values.reduce(0, +)
             let staleBytes = stale.reduce(0) { $0 + $1.bytes }
             staleTotal += staleBytes
-            lines.append(SweepLine(text: "  \(gigabytes(total))  \(pad(repoName, 14)) \(sizes.count) worktrees, \(stale.count) clean and untouched for \(disk.worktreeStaleDays)+ days (\(gb(staleBytes)))", command: nil))
+            lines.append(SweepLine(text: "  \(gigabytes(total))  \(pad(repoName, 14)) \(sizes.count) worktrees, \(stale.count) clean and untouched for \(disk.worktreeStaleDays)+ days (\(gigabytesTrimmed(staleBytes)))", command: nil))
             for s in stale.sorted(by: { $0.bytes > $1.bytes }).prefix(5) {
                 let name = String((s.path as NSString).lastPathComponent.prefix(42))
-                let cmd = s.tracked ? "git -C \(shq(repo)) worktree remove \(shq(s.path))" : "rm -rf \(shq(s.path))"
+                let cmd = s.tracked ? "git -C \(shellQuoted(repo)) worktree remove \(shellQuoted(s.path))" : "rm -rf \(shellQuoted(s.path))"
                 lines.append(SweepLine(text: "            \(gigabytes(s.bytes))  \(pad(name, 42)) \(String(format: "%3d", s.days))d  \(s.tracked ? "git worktree remove" : "untracked by git, rm -rf")", command: cmd))
             }
-            let globs = disk.regenerableInRepo.map { "\(shq(worktreeRoot))/*/\($0)" }.joined(separator: " ")
+            let globs = disk.regenerableInRepo.map { "\(shellQuoted(worktreeRoot))/*/\($0)" }.joined(separator: " ")
             let junk = DiskParse.duTotal(shell(["sh", "-c", "/usr/bin/du -sxk \(globs) 2>/dev/null"], timeout: 120))
             if junk > 200_000_000 {
                 staleTotal += junk
                 let cmd = "rm -rf \(tilde(worktreeRoot))/*/{\(disk.regenerableInRepo.joined(separator: ","))}"
-                lines.append(SweepLine(text: "            \(gb(junk)) of \(disk.regenerableInRepo.joined(separator: "/")) inside worktrees you still use - \(cmd)", command: cmd))
+                lines.append(SweepLine(text: "            \(gigabytesTrimmed(junk)) of \(disk.regenerableInRepo.joined(separator: "/")) inside worktrees you still use - \(cmd)", command: cmd))
             }
         }
         if !lines.isEmpty {
@@ -124,28 +120,28 @@ public enum DiskSweep {
 
     static func caches(_ disk: Disk) -> SweepSection {
         var found: [(bytes: Int64, path: String, command: String, note: String)] = []
-        let miseRoot = expand("~/.local/share/mise/installs")
+        let miseRoot = ("~/.local/share/mise/installs" as NSString).expandingTildeInPath
         if isDir(miseRoot) {
             let prunable = DiskParse.misePrunable(shell(["mise", "ls", "--prunable"]))
                 .map { miseRoot + "/" + $0.tool + "/" + $0.version }.filter(isDir)
             let bytes = prunable.reduce(0) { $0 + duBytes($1) }
             if bytes > 0 {
                 found.append((bytes, "~/.local/share/mise", "mise prune",
-                              "\(prunable.count) unused runtime versions (of \(gb(duBytes(expand("~/.local/share/mise")))) installed - only these go)"))
+                              "\(prunable.count) unused runtime versions (of \(gigabytesTrimmed(duBytes(("~/.local/share/mise" as NSString).expandingTildeInPath))) installed - only these go)"))
             }
         }
-        let simRoot = expand("~/Library/Developer/CoreSimulator/Devices")
+        let simRoot = ("~/Library/Developer/CoreSimulator/Devices" as NSString).expandingTildeInPath
         if isDir(simRoot) {
             let dirs = DiskParse.simulatorUDIDs(shell(["/usr/bin/xcrun", "simctl", "list", "devices", "unavailable", "-j"]))
                 .map { simRoot + "/" + $0 }.filter(isDir)
             let bytes = dirs.reduce(0) { $0 + duBytes($1) }
             if bytes > 0 {
                 found.append((bytes, "~/Library/Developer/CoreSimulator/Devices", "xcrun simctl delete unavailable",
-                              "\(dirs.count) unavailable devices (of \(gb(duBytes(simRoot))) all simulators - only these go)"))
+                              "\(dirs.count) unavailable devices (of \(gigabytesTrimmed(duBytes(simRoot))) all simulators - only these go)"))
             }
         }
         for entry in disk.caches {
-            let path = expand(entry.path)
+            let path = (entry.path as NSString).expandingTildeInPath
             guard FileManager.default.fileExists(atPath: path) else { continue }
             let bytes = duBytes(path)
             if bytes >= 100_000_000 { found.append((bytes, entry.path, entry.command, entry.note)) }
@@ -156,9 +152,5 @@ public enum DiskSweep {
             if !f.note.isEmpty { lines.append(SweepLine(text: "            " + f.note, command: nil)) }
         }
         return SweepSection(title: "caches", bytes: found.reduce(0) { $0 + $1.bytes }, lines: lines)
-    }
-
-    static func pad(_ s: String, _ width: Int) -> String {
-        s.count >= width ? s : s + String(repeating: " ", count: width - s.count)
     }
 }

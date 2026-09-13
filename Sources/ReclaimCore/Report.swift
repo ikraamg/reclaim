@@ -1,5 +1,12 @@
 import Foundation
 
+/// Pretty, sorted, slash-unescaped JSON; "{}" when encoding fails.
+public func jsonString<T: Encodable>(_ value: T) -> String {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+    return String(decoding: (try? encoder.encode(value)) ?? Data("{}".utf8), as: UTF8.self)
+}
+
 public enum Band: Int, Comparable {
     case burningCPU, holdingMemory, idleWeight
 
@@ -18,6 +25,11 @@ public func band(of p: ProcessRecord) -> Band {
     if p.cpu >= 20 { return .burningCPU }
     if p.rssKB >= 200 * 1024 { return .holdingMemory }
     return .idleWeight
+}
+
+// String(format:) ignores width flags on %@, so pad by hand.
+func pad(_ s: String, _ width: Int) -> String {
+    s.count >= width ? s : s + String(repeating: " ", count: width - s.count)
 }
 
 public struct RunReport {
@@ -84,11 +96,6 @@ public enum TextReport {
         }
         return out
     }
-
-    // String(format:) ignores width flags on %@, so pad by hand.
-    static func pad(_ s: String, _ width: Int) -> String {
-        s.count >= width ? s : s + String(repeating: " ", count: width - s.count)
-    }
 }
 
 public enum JSONReport {
@@ -137,8 +144,6 @@ public enum JSONReport {
         let body = Body(header: r.header, dryRun: r.dryRun, unchanged: r.evaluation.unchanged,
                         quietRuns: r.evaluation.state.quietRuns, swapJustHot: r.evaluation.swapJustHot,
                         findings: rows, memoryHogs: hogs)
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        return String(decoding: (try? encoder.encode(body)) ?? Data("{}".utf8), as: UTF8.self)
+        return jsonString(body)
     }
 }
