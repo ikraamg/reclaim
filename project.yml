@@ -1,0 +1,31 @@
+name: Reclaim
+options:
+  bundleIdPrefix: com.ikraam
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+packages:
+  ReclaimCore:
+    path: .
+targets:
+  Reclaim:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+    dependencies:
+      - package: ReclaimCore
+        product: ReclaimCore
+    scheme: {}
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.ikraam.Reclaim
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_NSAppleEventsUsageDescription: Reclaim reads your login items through System Events.
+        CODE_SIGN_ENTITLEMENTS: App/Reclaim.entitlements
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_EMIT_LOC_STRINGS: NO
