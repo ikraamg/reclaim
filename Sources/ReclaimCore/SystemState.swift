@@ -1,7 +1,7 @@
 import Foundation
 import IOKit.ps
 
-public struct SystemState: Equatable {
+public struct SystemState: Equatable, Sendable {
     public var swapUsedMB: Double?
     public var swapTotalMB: Double?
     public var uptimeSeconds: Int

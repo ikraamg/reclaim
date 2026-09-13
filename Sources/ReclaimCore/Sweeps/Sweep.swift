@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SweepLine: Equatable, Encodable {
+public struct SweepLine: Equatable, Encodable, Sendable {
     public var bytes: Int64?      // bytes this row is about; counted in the section total only when command is set
     public var label: String      // the thing: a path, a repo, a docker kind, a process name
     public var detail: String     // what a human needs to know about it
@@ -22,7 +22,7 @@ public struct SweepLine: Equatable, Encodable {
     }
 }
 
-public struct SweepSection: Equatable, Encodable {
+public struct SweepSection: Equatable, Encodable, Sendable {
     public var title: String
     public var bytes: Int64?
     public var lines: [SweepLine]
@@ -37,7 +37,7 @@ public struct SweepSection: Equatable, Encodable {
     }
 }
 
-public struct Sweep: Equatable, Encodable {
+public struct Sweep: Equatable, Encodable, Sendable {
     public var kind: String
     public var header: [String]
     public var sections: [SweepSection]

@@ -1,11 +1,11 @@
 import Foundation
 
-public enum Evidence: String, Codable {
+public enum Evidence: String, Codable, Sendable {
     case orphaned      // ppid == 1 and old enough
     case portUnbound   // regex group 1 is a port nobody in the process family listens on
 }
 
-public struct Rule: Codable, Equatable {
+public struct Rule: Codable, Equatable, Sendable {
     public var name: String
     public var match: String
     public var minAgeSeconds: Int
@@ -29,7 +29,7 @@ public struct Rule: Codable, Equatable {
     ]
 }
 
-public struct Wedged: Codable, Equatable {
+public struct Wedged: Codable, Equatable, Sendable {
     public var percent: Double = 40
     public var minAgeSeconds: Int = 3600
     public init() {}
@@ -40,7 +40,7 @@ public struct Wedged: Codable, Equatable {
     }
 }
 
-public struct CacheEntry: Codable, Equatable {
+public struct CacheEntry: Codable, Equatable, Sendable {
     public var path: String, command: String, note: String
     public init(path: String, command: String, note: String) { self.path = path; self.command = command; self.note = note }
 
@@ -60,7 +60,7 @@ public struct CacheEntry: Codable, Equatable {
     ]
 }
 
-public struct CPUHog: Codable, Equatable {
+public struct CPUHog: Codable, Equatable, Sendable {
     public var percent: Double = 50
     public var minAgeSeconds: Int = 1800
     public init() {}
@@ -71,7 +71,7 @@ public struct CPUHog: Codable, Equatable {
     }
 }
 
-public struct Boot: Codable, Equatable {
+public struct Boot: Codable, Equatable, Sendable {
     // Launch agents/daemons already said yes to; anything else non-Apple is listed.
     public var keep = ["homebrew.mxcl.", "com.grammarly.", "com.ikraam.", "com.logi.optionsplus",
                        "com.docker.", "com.nordvpn.macos.helper", "us.zoom.ZoomDaemon"]
@@ -85,7 +85,7 @@ public struct Boot: Codable, Equatable {
     }
 }
 
-public struct Disk: Codable, Equatable {
+public struct Disk: Codable, Equatable, Sendable {
     public var worktreeRoot = "~/Documents/GitHub"
     public var worktreeStaleDays = 21
     public var regenerableInRepo = ["tmp", "log", "node_modules", "coverage"]
@@ -113,7 +113,7 @@ public enum ConfigError: Error, Equatable {
     case invalid(String)
 }
 
-public struct Config: Codable, Equatable {
+public struct Config: Codable, Equatable, Sendable {
     public var pollSeconds = 30
     public var autoKill = false
     public var rules = Rule.defaults

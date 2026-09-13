@@ -1,11 +1,11 @@
 import Foundation
 
-public enum Verdict: String, Codable {
+public enum Verdict: String, Codable, Sendable {
     case kill = "KILL"
     case report = "REPORT"
 }
 
-public struct Finding: Equatable {
+public struct Finding: Equatable, Sendable {
     public var process: ProcessRecord
     public var category: String
     public var verdict: Verdict
@@ -30,7 +30,7 @@ public struct Context {
     }
 }
 
-public struct Classifier {
+public struct Classifier: Sendable {
     let config: Config
     let compiled: [(Rule, NSRegularExpression)]
 

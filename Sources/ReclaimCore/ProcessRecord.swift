@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ProcessRecord: Equatable {
+public struct ProcessRecord: Equatable, Sendable {
     public var pid: Int32
     public var ppid: Int32
     public var cpu: Double

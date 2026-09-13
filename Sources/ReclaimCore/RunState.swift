@@ -1,6 +1,6 @@
 import Foundation
 
-public struct RunState: Codable, Equatable {
+public struct RunState: Codable, Equatable, Sendable {
     public var quietRuns = 0
     public var signature: String? = nil
     public var hot: [Int32] = []
@@ -24,7 +24,7 @@ public struct RunState: Codable, Equatable {
     }
 }
 
-public struct Evaluation: Equatable {
+public struct Evaluation: Equatable, Sendable {
     public var findings: [Finding]
     public var unchanged: Bool
     public var swapJustHot: Bool
