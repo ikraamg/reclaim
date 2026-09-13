@@ -21,3 +21,33 @@ if [ "$py" = "$swift" ]; then
 else
   echo "parity: MISMATCH"; echo "--- python"; echo "$py"; echo "--- swift"; echo "$swift"; exit 1
 fi
+
+# Sweeps: compare the set of reclaim commands each side emits. Text differs by design.
+for mode in disk boot; do
+  py_raw=$(/usr/bin/python3 ~/.claude/skills/reclaim/reclaim.py "--$mode" 2>/dev/null) \
+    || { echo "parity ($mode): reclaim.py failed"; exit 1; }
+  swift_raw=$(.build/release/reclaim "--$mode" --json 2>/dev/null) \
+    || { echo "parity ($mode): reclaim failed"; exit 1; }
+  case "$swift_raw" in *'"sections"'*) ;; *) echo "parity ($mode): swift output has no sections"; exit 1;; esac
+  case "$mode" in
+    disk) py_marker="total reclaimable" ;;
+    boot) py_marker="nothing below is changed automatically" ;;
+  esac
+  case "$py_raw" in *"$py_marker"*) ;; *) echo "parity ($mode): python output has no footer"; exit 1;; esac
+
+  py_cmds=$(printf '%s\n' "$py_raw" \
+    | grep -oE '(rm -rf [^ ]+|docker (image|container|builder) prune[^ ]*|docker volume rm|mise prune|xcrun simctl delete unavailable|npm cache clean --force|uv cache clean|yarn cache clean|brew cleanup -s|pnpm store prune|pip cache purge|go clean -cache|launchctl bootout [^ ]+ [^ ]+|sudo launchctl bootout [^ ]+ [^ ]+)' \
+    | sed -E "s#'##g" | sort -u)
+  swift_cmds=$(printf '%s\n' "$swift_raw" \
+    | /usr/bin/python3 -c 'import json,sys
+for s in json.load(sys.stdin)["sections"]:
+    for l in s["lines"]:
+        if l["command"]: print(l["command"])' \
+    | grep -oE '(rm -rf [^ ]+|docker (image|container|builder) prune[^ ]*|docker volume rm|mise prune|xcrun simctl delete unavailable|npm cache clean --force|uv cache clean|yarn cache clean|brew cleanup -s|pnpm store prune|pip cache purge|go clean -cache|launchctl bootout [^ ]+ [^ ]+|sudo launchctl bootout [^ ]+ [^ ]+)' \
+    | sed -E "s#'##g" | sort -u)
+  if [ "$py_cmds" = "$swift_cmds" ]; then
+    echo "parity ($mode): identical command set ($(printf '%s\n' "$py_cmds" | grep -c . || true) commands)"
+  else
+    echo "parity ($mode): MISMATCH"; echo "--- python"; echo "$py_cmds"; echo "--- swift"; echo "$swift_cmds"; exit 1
+  fi
+done
