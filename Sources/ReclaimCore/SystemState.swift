@@ -25,7 +25,7 @@ public struct SystemState: Equatable {
         let battery = readBattery()
         return SystemState(swapUsedMB: swap?.used, swapTotalMB: swap?.total, uptimeSeconds: readUptime(),
                            batteryPercent: battery?.percent, batteryState: battery?.state,
-                           thermal: parseThermal(shell(["pmset", "-g", "therm"])))
+                           thermal: parseThermal(shell(["/usr/bin/pmset", "-g", "therm"])))
     }
 
     /// pmset prints three "No ... has been recorded" notes when idle; anything else is pressure.

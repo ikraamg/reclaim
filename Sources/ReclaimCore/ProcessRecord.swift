@@ -48,6 +48,6 @@ public enum ProcessSnapshot {
     }
 
     public static func live() -> [ProcessRecord] {
-        parse(shell(["ps", "-Ao", psColumns.joined(separator: ",")]))
+        parse(shell(["/bin/ps", "-Ao", psColumns.joined(separator: ",")]))
     }
 }

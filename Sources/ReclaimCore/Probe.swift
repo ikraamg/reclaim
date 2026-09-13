@@ -17,7 +17,7 @@ public enum Probe {
     }
 
     public static func listeners() -> [Int: Set<Int32>]? {
-        let table = parseListeners(shell(["lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-Fpn"]))
+        let table = parseListeners(shell(["/usr/sbin/lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-Fpn"]))
         return table.isEmpty ? nil : table
     }
 
@@ -26,7 +26,7 @@ public enum Probe {
     }
 
     public static func cwd(of pid: Int32) -> String? {
-        parseCwd(shell(["lsof", "-p", String(pid), "-a", "-d", "cwd", "-Fn"]))
+        parseCwd(shell(["/usr/sbin/lsof", "-p", String(pid), "-a", "-d", "cwd", "-Fn"]))
     }
 }
 
