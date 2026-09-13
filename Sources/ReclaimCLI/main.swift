@@ -45,7 +45,7 @@ if args.contains("--disk") || args.contains("--boot") {
 let dryRun = args.contains("--dry-run") || !(config.autoKill || args.contains("--kill"))
 let processes = ProcessSnapshot.live()
 let byPid = Dictionary(processes.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
-let me = shell(["/usr/bin/id", "-un"]).trimmingCharacters(in: .whitespacesAndNewlines)
+let me = (shell(["/usr/bin/id", "-un"]) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
 if me.isEmpty { fail("reclaim: cannot determine the current user - refusing to run", code: 2) }
 if getuid() == 0 && !dryRun { fail("reclaim: refusing to kill as root - use --dry-run", code: 2) }
 

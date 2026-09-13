@@ -20,7 +20,7 @@ public enum BootSweep {
     }
 
     static func loginItems() -> SweepSection {
-        let out = shell(["/usr/bin/osascript", "-e", "tell application \"System Events\" to get the name of every login item"])
+        let out = shell(["/usr/bin/osascript", "-e", "tell application \"System Events\" to get the name of every login item"]) ?? ""
         let names = out.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         return SweepSection(title: "login items (System Settings > General > Login Items to change)", bytes: nil,
                             lines: names.map { SweepLine(text: "  " + $0, command: nil) })
@@ -39,7 +39,7 @@ public enum BootSweep {
     }
 
     static func systemExtensions() -> SweepSection {
-        let db = shell(["/usr/bin/plutil", "-p", "/Library/SystemExtensions/db.plist"])
+        let db = shell(["/usr/bin/plutil", "-p", "/Library/SystemExtensions/db.plist"]) ?? ""
         let lines = BootParse.orphanedExtensions(db) { FileManager.default.fileExists(atPath: $0) }.flatMap { o in
             [SweepLine(text: "  \(pad(o.state, 22)) app gone: \(o.originApp)", command: nil),
              SweepLine(text: "            reinstall the signed app, LAUNCH it, then Finder-trash it while it runs (systemextensionsctl uninstall needs SIP off)", command: nil)]
@@ -48,7 +48,7 @@ public enum BootSweep {
     }
 
     static func brewLeftovers() -> SweepSection {
-        let started = BootParse.startedServices(shell(["brew", "services", "list"]))
+        let started = BootParse.startedServices(shell(["brew", "services", "list"]) ?? "")
         let varDir = "/opt/homebrew/var"
         let names = ((try? FileManager.default.contentsOfDirectory(atPath: varDir)) ?? []).sorted()
         var lines: [SweepLine] = []

@@ -17,7 +17,8 @@ public enum Probe {
     }
 
     public static func listeners() -> [Int: Set<Int32>]? {
-        let table = parseListeners(shell(["/usr/sbin/lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-Fpn"]))
+        guard let out = shell(["/usr/sbin/lsof", "-nP", "-iTCP", "-sTCP:LISTEN", "-Fpn"]) else { return nil }
+        let table = parseListeners(out)
         return table.isEmpty ? nil : table
     }
 
@@ -26,13 +27,13 @@ public enum Probe {
     }
 
     public static func cwd(of pid: Int32) -> String? {
-        parseCwd(shell(["/usr/sbin/lsof", "-p", String(pid), "-a", "-d", "cwd", "-Fn"]))
+        shell(["/usr/sbin/lsof", "-p", String(pid), "-a", "-d", "cwd", "-Fn"]).flatMap(parseCwd)
     }
 }
 
 public enum Worktree {
     public static func tracked(in repo: String) -> Set<String> {
-        let out = shell(["git", "-C", repo, "worktree", "list", "--porcelain"])
+        let out = shell(["git", "-C", repo, "worktree", "list", "--porcelain"]) ?? ""
         return Set(out.split(separator: "\n").filter { $0.hasPrefix("worktree ") }
             .map { String($0.dropFirst(9)).trimmingCharacters(in: .whitespaces) })
     }

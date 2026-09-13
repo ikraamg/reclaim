@@ -51,7 +51,7 @@ final class ProbeTests: XCTestCase {
         // git worktree list returns resolved paths; we must resolve both input and output paths
         // using the same method git uses (realpath).
         let resolveSymlinks = { (path: String) in
-            shell(["realpath", path]).trimmingCharacters(in: .whitespacesAndNewlines)
+            (shell(["realpath", path]) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         }
         let repoResolved = resolveSymlinks(repo)
         let staleResolved = resolveSymlinks("\(worktrees)/stale")

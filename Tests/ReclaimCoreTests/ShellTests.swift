@@ -13,19 +13,27 @@ final class ShellTests: XCTestCase {
 
     func testTimeoutReturnsEmptyPromptly() {
         let started = Date()
-        XCTAssertEqual(shell(["sleep", "5"], timeout: 1), "")
+        XCTAssertNil(shell(["sleep", "5"], timeout: 1))
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
     }
 
     func testGrandchildHoldingThePipeDoesNotBlockPastTimeout() {
         let started = Date()
         // sh exits at once; the backgrounded sleep inherits stdout and holds EOF open for 5s.
-        XCTAssertEqual(shell(["sh", "-c", "sleep 5 & echo hi"], timeout: 1), "")
+        XCTAssertNil(shell(["sh", "-c", "sleep 5 & echo hi"], timeout: 1))
         XCTAssertLessThan(Date().timeIntervalSince(started), 3)
     }
 
     func testNonZeroExitStillReturnsStdout() {
         XCTAssertEqual(shell(["sh", "-c", "echo partial; exit 3"]), "partial\n")
+    }
+
+    func testKilledBySignalIsNil() {
+        XCTAssertNil(shell(["sh", "-c", "kill -9 $$"], timeout: 5))
+    }
+
+    func testEmptyOutputIsEmptyNotNil() {
+        XCTAssertEqual(shell(["true"]), "")
     }
 
     func testTimeoutsDoNotLeakThreads() {
@@ -42,6 +50,6 @@ final class ShellTests: XCTestCase {
     }
 
     func testLargeOutputDrainsFullPipe() {
-        XCTAssertEqual(shell(["sh", "-c", "head -c 300000 /dev/zero | tr '\\0' x"]).count, 300000)
+        XCTAssertEqual((shell(["sh", "-c", "head -c 300000 /dev/zero | tr '\\0' x"]) ?? "").count, 300000)
     }
 }
