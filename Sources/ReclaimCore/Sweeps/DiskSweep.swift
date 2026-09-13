@@ -42,14 +42,14 @@ public enum DiskSweep {
         guard !(shell(["sh", "-c", "command -v docker"]) ?? "").isEmpty else { return SweepSection(title: "docker", bytes: 0, lines: []) }
         let summary = DiskParse.dockerSummary(shell(["docker", "system", "df", "--format", "{{json .}}"]) ?? "")
         guard !summary.isEmpty else {
-            return SweepSection(title: "docker", bytes: 0, lines: [SweepLine(text: "  docker is installed but not running", command: nil)])
+            return SweepSection(title: "docker", bytes: 0, lines: [SweepLine(label: "", detail: "  docker is installed but not running", command: nil)])
         }
         var lines: [SweepLine] = []
         var total: Int64 = 0
         for (kind, cmd) in [("Images", "docker image prune -a"), ("Containers", "docker container prune"), ("Build Cache", "docker builder prune")] {
             guard let row = summary[kind], row.reclaimableBytes > 100_000_000 else { continue }
             total += row.reclaimableBytes
-            lines.append(SweepLine(text: String(format: "  %@  %@ %d total, %@ active   %@",
+            lines.append(SweepLine(label: "", detail: String(format: "  %@  %@ %d total, %@ active   %@",
                                                 gigabytes(row.reclaimableBytes) as NSString, pad(kind, 13) as NSString,
                                                 row.totalCount, row.active as NSString, cmd as NSString),
                                    command: cmd))
@@ -60,18 +60,18 @@ public enum DiskSweep {
         if !free.isEmpty {
             let size = free.reduce(0) { $0 + $1.bytes }
             total += size
-            lines.append(SweepLine(text: "  \(gigabytes(size))  volumes       \(free.count) unused and rebuildable (node_modules, bundle, assets)", command: nil))
+            lines.append(SweepLine(label: "", detail: "  \(gigabytes(size))  volumes       \(free.count) unused and rebuildable (node_modules, bundle, assets)", command: nil))
             let names = free.map(\.name).sorted()
             let cmd = "docker volume rm " + names.prefix(6).joined(separator: " ") + (names.count > 6 ? " ..." : "")
-            lines.append(SweepLine(text: "            " + cmd, command: cmd))
+            lines.append(SweepLine(label: "", detail: "            " + cmd, command: cmd))
         }
         if let data = byKind[.data], !data.isEmpty {
             let names = data.map(\.name).sorted().prefix(3).joined(separator: ", ")
-            lines.append(SweepLine(text: "  \(gigabytes(data.reduce(0) { $0 + $1.bytes }))  volumes       \(data.count) look like data (\(names)) - leave alone, never `docker volume prune`", command: nil))
+            lines.append(SweepLine(label: "", detail: "  \(gigabytes(data.reduce(0) { $0 + $1.bytes }))  volumes       \(data.count) look like data (\(names)) - leave alone, never `docker volume prune`", command: nil))
         }
         let unknown = (byKind[.unknown] ?? []).filter { $0.links == 0 && $0.bytes > 100_000_000 }
         if !unknown.isEmpty {
-            lines.append(SweepLine(text: "  \(gigabytes(unknown.reduce(0) { $0 + $1.bytes }))  volumes       \(unknown.count) unnamed and unclassified - `docker volume inspect` before deleting", command: nil))
+            lines.append(SweepLine(label: "", detail: "  \(gigabytes(unknown.reduce(0) { $0 + $1.bytes }))  volumes       \(unknown.count) unnamed and unclassified - `docker volume inspect` before deleting", command: nil))
         }
         return SweepSection(title: "docker", bytes: total, lines: lines)
     }
@@ -98,22 +98,22 @@ public enum DiskSweep {
             let total = sizes.values.reduce(0, +)
             let staleBytes = stale.reduce(0) { $0 + $1.bytes }
             staleTotal += staleBytes
-            lines.append(SweepLine(text: "  \(gigabytes(total))  \(pad(repoName, 14)) \(sizes.count) worktrees, \(stale.count) clean and untouched for \(disk.worktreeStaleDays)+ days (\(gigabytesTrimmed(staleBytes)))", command: nil))
+            lines.append(SweepLine(label: "", detail: "  \(gigabytes(total))  \(pad(repoName, 14)) \(sizes.count) worktrees, \(stale.count) clean and untouched for \(disk.worktreeStaleDays)+ days (\(gigabytesTrimmed(staleBytes)))", command: nil))
             for s in stale.sorted(by: { $0.bytes > $1.bytes }).prefix(5) {
                 let name = String((s.path as NSString).lastPathComponent.prefix(42))
                 let cmd = s.tracked ? "git -C \(shellQuoted(repo)) worktree remove \(shellQuoted(s.path))" : "rm -rf \(shellQuoted(s.path))"
-                lines.append(SweepLine(text: "            \(gigabytes(s.bytes))  \(pad(name, 42)) \(String(format: "%3d", s.days))d  \(s.tracked ? "git worktree remove" : "untracked by git, rm -rf")", command: cmd))
+                lines.append(SweepLine(label: "", detail: "            \(gigabytes(s.bytes))  \(pad(name, 42)) \(String(format: "%3d", s.days))d  \(s.tracked ? "git worktree remove" : "untracked by git, rm -rf")", command: cmd))
             }
             let globs = disk.regenerableInRepo.map { "\(shellQuoted(worktreeRoot))/*/\($0)" }.joined(separator: " ")
             let junk = DiskParse.duTotal(shell(["sh", "-c", "/usr/bin/du -sxk \(globs) 2>/dev/null"], timeout: 120) ?? "")
             if junk > 200_000_000 {
                 staleTotal += junk
                 let cmd = "rm -rf \(tilde(worktreeRoot))/*/{\(disk.regenerableInRepo.joined(separator: ","))}"
-                lines.append(SweepLine(text: "            \(gigabytesTrimmed(junk)) of \(disk.regenerableInRepo.joined(separator: "/")) inside worktrees you still use - \(cmd)", command: cmd))
+                lines.append(SweepLine(label: "", detail: "            \(gigabytesTrimmed(junk)) of \(disk.regenerableInRepo.joined(separator: "/")) inside worktrees you still use - \(cmd)", command: cmd))
             }
         }
         if !lines.isEmpty {
-            lines.append(SweepLine(text: "            check each one first - a worktree is unpushed work until proven otherwise", command: nil))
+            lines.append(SweepLine(label: "", detail: "            check each one first - a worktree is unpushed work until proven otherwise", command: nil))
         }
         return SweepSection(title: "git worktrees", bytes: staleTotal, lines: lines)
     }
@@ -148,8 +148,8 @@ public enum DiskSweep {
         }
         var lines: [SweepLine] = []
         for f in found.sorted(by: { $0.bytes > $1.bytes }) {
-            lines.append(SweepLine(text: "  \(gigabytes(f.bytes))  \(pad(f.path, 46)) \(f.command)", command: f.command))
-            if !f.note.isEmpty { lines.append(SweepLine(text: "            " + f.note, command: nil)) }
+            lines.append(SweepLine(label: "", detail: "  \(gigabytes(f.bytes))  \(pad(f.path, 46)) \(f.command)", command: f.command))
+            if !f.note.isEmpty { lines.append(SweepLine(label: "", detail: "            " + f.note, command: nil)) }
         }
         return SweepSection(title: "caches", bytes: found.reduce(0) { $0 + $1.bytes }, lines: lines)
     }

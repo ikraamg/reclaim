@@ -1,15 +1,24 @@
 import Foundation
 
 public struct SweepLine: Equatable, Encodable {
-    public var text: String
-    public var command: String?
-    public init(text: String, command: String?) { self.text = text; self.command = command }
+    public var bytes: Int64?      // reclaimable bytes this row represents; nil for a note
+    public var label: String      // the thing: a path, a repo, a docker kind, a process name
+    public var detail: String     // what a human needs to know about it
+    public var command: String?   // what would reclaim it; nil when nothing should
+    public var nested: Bool       // indented under the previous top-level row
 
-    enum CodingKeys: String, CodingKey { case text, command }
+    public init(bytes: Int64? = nil, label: String, detail: String = "", command: String? = nil, nested: Bool = false) {
+        self.bytes = bytes; self.label = label; self.detail = detail; self.command = command; self.nested = nested
+    }
+
+    enum CodingKeys: String, CodingKey { case bytes, label, detail, command, nested }
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(text, forKey: .text)
-        try c.encode(command, forKey: .command)   // nil → null, never a missing key
+        try c.encode(bytes, forKey: .bytes)       // nil → null, never a missing key
+        try c.encode(label, forKey: .label)
+        try c.encode(detail, forKey: .detail)
+        try c.encode(command, forKey: .command)
+        try c.encode(nested, forKey: .nested)
     }
 }
 
@@ -45,17 +54,31 @@ public func gigabytes(_ bytes: Int64) -> String {
 
 public enum SweepReport {
     public static func text(_ s: Sweep) -> String {
-        var out = s.header.joined(separator: "\n") + "\n\n"
+        var out = s.header.isEmpty ? "" : s.header.joined(separator: "\n") + "\n\n"
         for section in s.sections where !section.lines.isEmpty {
             var title = section.title
             if let bytes = section.bytes { title += " - \(gigabytes(bytes).trimmingCharacters(in: .whitespaces)) reclaimable" }
-            out += title + "\n" + section.lines.map(\.text).joined(separator: "\n") + "\n\n"
+            let width = min(48, section.lines.map(\.label.count).max() ?? 0)
+            out += title + "\n" + section.lines.map { row($0, width: width) }.joined(separator: "\n") + "\n\n"
         }
         if !s.footer.isEmpty { out += s.footer.joined(separator: "\n") + "\n" }
         return out
     }
 
-    public static func json(_ s: Sweep) -> String {
-        jsonString(s)
+    static func row(_ line: SweepLine, width: Int) -> String {
+        let indent = line.nested ? "    " : "  "
+        var text: String
+        if let bytes = line.bytes {
+            text = indent + gigabytes(bytes) + "  " + pad(line.label, width) + "  " + line.detail
+        } else if !line.label.isEmpty {
+            text = indent + pad(line.label, width) + "  " + line.detail
+        } else {
+            text = "            " + line.detail
+        }
+        if let command = line.command { text += "   " + command }
+        while text.hasSuffix(" ") { text.removeLast() }
+        return text
     }
+
+    public static func json(_ s: Sweep) -> String { jsonString(s) }
 }
