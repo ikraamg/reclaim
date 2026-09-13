@@ -1,7 +1,7 @@
 import Foundation
 
 public struct SweepLine: Equatable, Encodable {
-    public var bytes: Int64?      // reclaimable bytes this row represents; nil for a note
+    public var bytes: Int64?      // bytes this row is about; counted in the section total only when command is set
     public var label: String      // the thing: a path, a repo, a docker kind, a process name
     public var detail: String     // what a human needs to know about it
     public var command: String?   // what would reclaim it; nil when nothing should

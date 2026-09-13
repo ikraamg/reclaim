@@ -32,10 +32,13 @@ public enum Probe {
 }
 
 public enum Worktree {
-    public static func tracked(in repo: String) -> Set<String> {
-        let out = shell(["git", "-C", repo, "worktree", "list", "--porcelain"]) ?? ""
-        return Set(out.split(separator: "\n").filter { $0.hasPrefix("worktree ") }
+    public static func parseTracked(_ porcelain: String) -> Set<String> {
+        Set(porcelain.split(separator: "\n").filter { $0.hasPrefix("worktree ") }
             .map { String($0.dropFirst(9)).trimmingCharacters(in: .whitespaces) })
+    }
+
+    public static func tracked(in repo: String) -> Set<String> {
+        parseTracked(shell(["git", "-C", repo, "worktree", "list", "--porcelain"]) ?? "")
     }
 
     /// Deleted directory, or a directory git has already stopped tracking.

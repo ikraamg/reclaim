@@ -28,13 +28,12 @@ public enum BootParse {
     }
 
     /// Non-Apple plists not prefixed by anything in `keep`, each with the launchctl line that unloads it.
-    public static func launchItems(folder: String, names: [String], keep: [String], home: String = NSHomeDirectory()) -> [LaunchItem] {
-        let expanded = folder.hasPrefix("~") ? home + folder.dropFirst(1) : folder
-        return names.sorted().compactMap { name in
+    public static func launchItems(folder: String, names: [String], keep: [String]) -> [LaunchItem] {
+        names.sorted().compactMap { name in
             guard name.hasSuffix(".plist") else { return nil }
             let label = String(name.dropLast(6))
             if label.hasPrefix("com.apple.") || keep.contains(where: { label.hasPrefix($0) }) { return nil }
-            let full = "'" + expanded + "/" + name + "'"
+            let full = "'" + folder + "/" + name + "'"
             let unload = folder.contains("Daemons") ? "sudo launchctl bootout system \(full)" : "launchctl bootout gui/$(id -u) \(full)"
             return LaunchItem(path: folder + "/" + name, unloadCommand: unload)
         }

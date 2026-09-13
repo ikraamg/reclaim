@@ -13,6 +13,7 @@ final class SweepReportTests: XCTestCase {
                               SweepLine(bytes: 9_000_000_000, label: "core", detail: "47 worktrees, 1 stale"),
                               SweepLine(bytes: 600_000_000, label: "old-feature", detail: "31d, tracked", command: "git -C ~/core worktree remove ~/core.worktrees/old-feature", nested: true)]),
                           SweepSection(title: "docker", bytes: 0, lines: []),
+                          SweepSection(title: "boot-like", bytes: nil, lines: []),
                       ],
                       footer: ["total reclaimable: 2.51GB"])
 
@@ -47,7 +48,8 @@ final class SweepReportTests: XCTestCase {
         XCTAssertEqual(lines[0]["command"] as? String, "brew cleanup -s")
         XCTAssertTrue(lines[2]["bytes"] is NSNull)
         XCTAssertTrue(lines[2]["command"] is NSNull)
-        XCTAssertTrue(sections[2]["bytes"] is NSNull == false)   // 0, not null
+        XCTAssertEqual(sections[2]["bytes"] as? Int, 0)   // 0, not null
+        XCTAssertTrue(sections[3]["bytes"] is NSNull)
         XCTAssertFalse(SweepReport.json(sweep).contains("\\/"))
     }
 

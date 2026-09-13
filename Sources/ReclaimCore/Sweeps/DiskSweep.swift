@@ -48,7 +48,7 @@ public enum DiskSweep {
             total += size
             let names = free.map(\.name).sorted()
             lines.append(SweepLine(bytes: size, label: "volumes", detail: "\(free.count) unused and rebuildable",
-                                   command: "docker volume rm " + names.prefix(6).joined(separator: " ") + (names.count > 6 ? " ..." : "")))
+                                   command: "docker volume rm " + names.joined(separator: " ")))
         }
         if let data = byKind[.data], !data.isEmpty {
             let names = data.map(\.name).sorted().prefix(3).joined(separator: ", ")
@@ -77,13 +77,16 @@ public enum DiskSweep {
             if sizes.isEmpty { continue }
             let repoName = (worktreeRoot as NSString).lastPathComponent.replacingOccurrences(of: ".worktrees", with: "")
             let repo = (worktreeRoot as NSString).deletingLastPathComponent + "/" + repoName
-            let tracked = Set((shell(["git", "-C", repo, "worktree", "list", "--porcelain"], 20) ?? "")
-                .split(separator: "\n").filter { $0.hasPrefix("worktree ") }.map { String($0.dropFirst(9)).trimmingCharacters(in: .whitespaces) })
+            guard let porcelain = shell(["git", "-C", repo, "worktree", "list", "--porcelain"], 20) else {
+                lines.append(SweepLine(label: repoName, detail: "skipped - git did not answer")); continue
+            }
+            let tracked = Worktree.parseTracked(porcelain)
             var stale: [(bytes: Int64, path: String, days: Double, tracked: Bool)] = []
             for (path, bytes) in sizes {
                 let raw = (shell(["git", "-C", path, "log", "-1", "--format=%ct"], 20) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                 let days = Double(raw).map { (now.timeIntervalSince1970 - $0) / 86400 } ?? 0
-                let dirty = !(shell(["git", "-C", path, "status", "--porcelain"], 20) ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                guard let status = shell(["git", "-C", path, "status", "--porcelain"], 20) else { continue }   // unknown → not stale
+                let dirty = !status.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 if !dirty && days > Double(disk.worktreeStaleDays) { stale.append((bytes, path, days, tracked.contains(path))) }
             }
             let total = sizes.values.reduce(0, +)

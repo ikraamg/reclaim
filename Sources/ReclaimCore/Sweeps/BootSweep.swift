@@ -34,8 +34,8 @@ public enum BootSweep {
         var lines: [SweepLine] = []
         for folder in ["~/Library/LaunchAgents", "/Library/LaunchAgents", "/Library/LaunchDaemons"] {
             guard let names = fs.contents(fs.expand(folder)) else { continue }
-            for item in BootParse.launchItems(folder: folder, names: names, keep: boot.keep, home: fs.home) {
-                lines.append(SweepLine(label: item.path, command: item.unloadCommand))
+            for item in BootParse.launchItems(folder: fs.expand(folder), names: names, keep: boot.keep) {
+                lines.append(SweepLine(label: fs.tilde(item.path), command: item.unloadCommand))
             }
         }
         return SweepSection(title: "launch agents/daemons outside boot.keep (unload, then move the plist to the Trash)", bytes: nil, lines: lines)

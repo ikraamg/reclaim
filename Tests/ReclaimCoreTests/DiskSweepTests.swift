@@ -45,7 +45,7 @@ final class DiskSweepTests: XCTestCase {
         let now = Date(timeIntervalSince1970: 2_000_000_000)
         let staleAt = Int(now.timeIntervalSince1970) - Int(21.5 * 86400)   // 21.5 days: stale under float compare
         let shell = fakeShell([
-            "sh -c /usr/bin/du -sxk '/Users/me/Documents/GitHub/core.worktrees'/*/": "1000\t/Users/me/Documents/GitHub/core.worktrees/old/\n2000\t/Users/me/Documents/GitHub/core.worktrees/live/\n",
+            "sh -c /usr/bin/du -sxk '/Users/me/Documents/GitHub/core.worktrees'/*/ 2>": "1000\t/Users/me/Documents/GitHub/core.worktrees/old/\n2000\t/Users/me/Documents/GitHub/core.worktrees/live/\n",
             "git -C /Users/me/Documents/GitHub/core worktree list": "worktree /Users/me/Documents/GitHub/core\nworktree /Users/me/Documents/GitHub/core.worktrees/live\n",
             "git -C /Users/me/Documents/GitHub/core.worktrees/old log": "\(staleAt)\n",
             "git -C /Users/me/Documents/GitHub/core.worktrees/live log": "\(Int(now.timeIntervalSince1970) - 3600)\n",

@@ -29,6 +29,10 @@ final class ProbeTests: XCTestCase {
         XCTAssertEqual(Probe.listeners()?[38471], [server.processIdentifier])
     }
 
+    func testParseTracked() {
+        XCTAssertEqual(Worktree.parseTracked("worktree /a\nHEAD x\nworktree /b\n"), ["/a", "/b"])
+    }
+
     func testWorktreeNoteForMissingDirectory() {
         XCTAssertEqual(Worktree.note(cwd: "/definitely/not/here/.worktrees/x"),
                        " (its worktree /definitely/not/here/.worktrees/x is gone)")
