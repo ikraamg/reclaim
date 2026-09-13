@@ -10,7 +10,7 @@ enum Render {
             exit(2)
         }
         let dark = args.contains("--dark")
-        let renderer = ImageRenderer(content: PopoverView(monitor: monitor).environment(\.colorScheme, dark ? .dark : .light))
+        let renderer = ImageRenderer(content: PopoverView(monitor: monitor, scrolls: false).environment(\.colorScheme, dark ? .dark : .light))
         renderer.scale = 2
         guard let image = renderer.cgImage,
               let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { exit(3) }

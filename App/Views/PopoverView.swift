@@ -11,6 +11,7 @@ struct PopoverActions {
 struct PopoverView: View {
     let monitor: Monitor
     var actions = PopoverActions()
+    var scrolls = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -28,9 +29,13 @@ struct PopoverView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             Hairline()
-            content
-                .frame(maxHeight: 480, alignment: .top)
-                .clipped()
+            if scrolls {
+                ScrollView { content }.frame(maxHeight: 480)
+            } else {
+                content
+                    .frame(maxHeight: 480, alignment: .top)
+                    .clipped()
+            }
             Hairline()
             footer
         }
