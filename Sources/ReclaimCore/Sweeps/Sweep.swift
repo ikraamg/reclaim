@@ -2,7 +2,7 @@ import Foundation
 
 public struct SweepLine: Equatable, Encodable, Sendable {
     public var bytes: Int64?      // bytes this row is about; counted in the section total only when command is set
-    public var label: String      // the thing: a path, a repo, a docker kind, a process name
+    public var label: String      // the thing: a path, a repo, a docker kind, a process name; "" marks a note row (detail only)
     public var detail: String     // what a human needs to know about it
     public var command: String?   // what would reclaim it; nil when nothing should
     public var nested: Bool       // indented under the previous top-level row
