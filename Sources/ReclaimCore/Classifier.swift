@@ -10,6 +10,10 @@ public struct Finding: Equatable, Sendable {
     public var category: String
     public var verdict: Verdict
     public var reason: String
+
+    public init(process: ProcessRecord, category: String, verdict: Verdict, reason: String) {
+        self.process = process; self.category = category; self.verdict = verdict; self.reason = reason
+    }
 }
 
 public struct Context {
