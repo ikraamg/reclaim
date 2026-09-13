@@ -54,7 +54,7 @@ public enum BootSweep {
         var lines: [SweepLine] = []
         for name in names where name.hasPrefix("postgresql@") && !started.contains(name) {
             let path = varDir + "/" + name
-            let bytes = DiskSweep.duBytes(path)
+            let bytes = DiskSweep.duBytes(path, shell: realShell) ?? 0
             guard bytes >= 100_000_000 else { continue }
             let cmd = "rm -rf \(path)"
             lines.append(SweepLine(label: "", detail: "  \(gigabytes(bytes))  \(pad(path, 40)) \(cmd)   (data dir of a version that is not running)", command: cmd))
