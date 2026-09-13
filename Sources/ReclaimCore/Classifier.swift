@@ -76,6 +76,10 @@ public struct Classifier {
 
     func apply(_ rule: Rule, match: NSTextCheckingResult, to p: ProcessRecord, in ctx: Context) -> Finding? {
         let old = p.age >= rule.minAgeSeconds
+        if let floor = rule.minCPU, p.cpu < floor {
+            return Finding(process: p, category: rule.name, verdict: .report,
+                           reason: String(format: "%.0f%% CPU is below the %.0f%% floor for this rule", p.cpu, floor))
+        }
         switch rule.evidence {
         case .orphaned:
             if p.ppid == 1 && old {
@@ -86,18 +90,6 @@ public struct Classifier {
             if rule.name == "busy-loop" {
                 return Finding(process: p, category: rule.name, verdict: .report,
                                reason: "spin loop, but young or still parented - may be a live benchmark")
-            }
-            return nil
-
-        case .parentDead:
-            let parentAlive = ctx.byPid[p.ppid] != nil
-            if !parentAlive && old {
-                return Finding(process: p, category: rule.name, verdict: .kill,
-                               reason: "\(rule.name), its parent is gone")
-            }
-            if p.age >= 2 * 86400 {
-                return Finding(process: p, category: rule.name, verdict: .report,
-                               reason: "\(human(age: p.age)) old but parent \(p.ppid) is alive")
             }
             return nil
 

@@ -74,4 +74,17 @@ final class ConfigTests: XCTestCase {
         try c.save(to: url)
         XCTAssertEqual(try Config.load(from: url).get(), c)
     }
+
+    func testMcpServerIsOrphanedAndBusyLoopHasACPUFloor() {
+        let rules = Dictionary(uniqueKeysWithValues: Config().rules.map { ($0.name, $0) })
+        XCTAssertEqual(rules["mcp-server"]?.evidence, .orphaned)
+        XCTAssertEqual(rules["mcp-server"]?.minAgeSeconds, 3600)
+        XCTAssertEqual(rules["busy-loop"]?.minCPU, 20)
+        XCTAssertNil(rules["dev-server"]?.minCPU)
+    }
+
+    func testParentDeadNoLongerDecodes() {
+        let old = Data(#"{"rules":[{"name":"x","match":"x","minAgeSeconds":1,"evidence":"parentDead"}]}"#.utf8)
+        XCTAssertThrowsError(try JSONDecoder().decode(Config.self, from: old))
+    }
 }

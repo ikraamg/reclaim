@@ -11,8 +11,8 @@ public enum SelfCheck {
     static let tenDays = 10 * 86400
 
     static func record(pid: Int32 = 500, ppid: Int32 = 1, age: Int = tenDays,
-                       user: String = "me", command: String) -> ProcessRecord {
-        ProcessRecord(pid: pid, ppid: ppid, cpu: 1.0, rssKB: 300_000, age: age, user: user, command: command)
+                       user: String = "me", cpu: Double = 1.0, command: String) -> ProcessRecord {
+        ProcessRecord(pid: pid, ppid: ppid, cpu: cpu, rssKB: 300_000, age: age, user: user, command: command)
     }
 
     /// pid 900 is a live parent; port 3000 is held by pid 77.
@@ -50,11 +50,11 @@ public enum SelfCheck {
         live("launchd itself", record(pid: 1, ppid: 0, command: "/sbin/launchd")),
         live("our own ancestor", record(pid: 1, command: "zsh -c while :; do :; done")),
 
-        dead("orphaned spin loop", record(command: "zsh -c 'while :; do :; done'")),
+        dead("orphaned spin loop", record(cpu: 99, command: "zsh -c 'while :; do :; done'")),
         dead("puma on an unbound port", record(command: "puma 8.0.2 (tcp://localhost:3111) [gone]")),
         dead("duplicate puma on a taken port", record(command: "puma 8.0.2 (tcp://localhost:3000) [dup]")),
         dead("orphaned watcher", record(command: "/gems/rb-fsevent-0.11.2/bin/fsevent_watch /repo")),
-        dead("MCP server with a dead editor", record(ppid: 4242, command: "npm exec chrome-devtools-mcp@1.2.0")),
+        dead("MCP server with a dead editor", record(ppid: 1, command: "npm exec chrome-devtools-mcp@1.2.0")),
     ]
 
     /// Empty when the predicate is safe and complete.

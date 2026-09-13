@@ -2,7 +2,6 @@ import Foundation
 
 public enum Evidence: String, Codable {
     case orphaned      // ppid == 1 and old enough
-    case parentDead    // ppid no longer in the snapshot and old enough
     case portUnbound   // regex group 1 is a port nobody in the process family listens on
 }
 
@@ -11,20 +10,22 @@ public struct Rule: Codable, Equatable {
     public var match: String
     public var minAgeSeconds: Int
     public var evidence: Evidence
+    public var minCPU: Double?
 
-    public init(name: String, match: String, minAgeSeconds: Int, evidence: Evidence) {
+    public init(name: String, match: String, minAgeSeconds: Int, evidence: Evidence, minCPU: Double? = nil) {
         self.name = name; self.match = match; self.minAgeSeconds = minAgeSeconds; self.evidence = evidence
+        self.minCPU = minCPU
     }
 
     public static let defaults: [Rule] = [
         Rule(name: "dev-server", match: #"^puma\s[\d.]+\s\(tcp://[^:]+:(\d+)\)"#,
              minAgeSeconds: 900, evidence: .portUnbound),
         Rule(name: "busy-loop", match: #"(?:zsh|bash|sh|dash)\b.*-c\b.*while\s+(?::|true)\s*;?\s*do"#,
-             minAgeSeconds: 3600, evidence: .orphaned),
+             minAgeSeconds: 3600, evidence: .orphaned, minCPU: 20),
         Rule(name: "file-watcher", match: #"/fsevent_watch\b"#,
              minAgeSeconds: 900, evidence: .orphaned),
         Rule(name: "mcp-server", match: #"\b(chrome-devtools-mcp|playwright-mcp|firecrawl-mcp|@playwright/mcp)\b"#,
-             minAgeSeconds: 3600, evidence: .parentDead),
+             minAgeSeconds: 3600, evidence: .orphaned),
     ]
 }
 

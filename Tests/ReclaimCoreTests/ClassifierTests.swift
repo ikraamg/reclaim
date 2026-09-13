@@ -79,6 +79,15 @@ final class ClassifierTests: XCTestCase {
         XCTAssertNotEqual(f?.verdict, .kill)
     }
 
+    func testBusyLoopBelowCPUFloorIsReportNotKill() {
+        // A LaunchAgent keepalive: `while true; do …; sleep 300; done` at ppid 1, 0% CPU, days old.
+        let p = ProcessRecord(pid: 800, ppid: 1, cpu: 0.0, rssKB: 1000, age: 10 * 86400,
+                              user: "me", command: "sh -c while true; do /usr/local/bin/sync; sleep 300; done")
+        let f = Classifier(config: Config()).classify(p, in: Context.forTests(processes: [p]))
+        XCTAssertEqual(f?.verdict, .report)
+        XCTAssertTrue(f?.reason.contains("below") ?? false)
+    }
+
     func testPortCandidatesOnlyReturnsPortUnboundMatches() {
         let puma = ProcessRecord(pid: 77, ppid: 1, cpu: 1, rssKB: 300_000, age: 864_000,
                                  user: "me", command: "puma 8.0.2 (tcp://localhost:3000) [core]")
