@@ -9,7 +9,7 @@ func fail(_ message: String, code: Int32) -> Never {
     exit(code)
 }
 
-let known: Set<String> = ["--dry-run", "--json", "--self-check", "--disk", "--boot"]
+let known: Set<String> = ["--dry-run", "--json", "--self-check", "--disk", "--boot", "--kill"]
 if let stray = args.subtracting(known).sorted().first {
     fail("reclaim: unknown flag \(stray) - refusing to run", code: 2)
 }
@@ -38,7 +38,8 @@ if args.contains("--disk") || args.contains("--boot") {
     exit(0)
 }
 
-let dryRun = args.contains("--dry-run")
+// --dry-run always wins. Otherwise kill only if the config says so or --kill overrides for this run.
+let dryRun = args.contains("--dry-run") || !(config.autoKill || args.contains("--kill"))
 let processes = ProcessSnapshot.live()
 let byPid = Dictionary(processes.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
 let me = shell(["/usr/bin/id", "-un"]).trimmingCharacters(in: .whitespacesAndNewlines)
