@@ -138,7 +138,7 @@ public enum JSONReport {
                         quietRuns: r.evaluation.state.quietRuns, swapJustHot: r.evaluation.swapJustHot,
                         findings: rows, memoryHogs: hogs)
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         return String(decoding: (try? encoder.encode(body)) ?? Data("{}".utf8), as: UTF8.self)
     }
 }
