@@ -132,6 +132,9 @@ public struct Classifier: Sendable {
             return Finding(process: p, category: "wedged", verdict: .report,
                            reason: "\(cpu) - killall respawns it clean")
         }
+        if let explanation = config.busyByDesign.first(where: { p.command.contains($0.key) })?.value {
+            return Finding(process: p, category: "wedged", verdict: .report, reason: "\(cpu) - \(explanation)")
+        }
         return Finding(process: p, category: "wedged", verdict: .report,
                        reason: "\(cpu) - not safe to kill, worth a look")
     }

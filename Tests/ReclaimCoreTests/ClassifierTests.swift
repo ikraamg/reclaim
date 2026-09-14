@@ -33,6 +33,13 @@ final class ClassifierTests: XCTestCase {
         XCTAssertTrue(f?.reason.contains("not safe to kill") ?? false)
     }
 
+    func testWedgedDaemonBusyByDesignIsExplained() {
+        let p = ProcessRecord(pid: 650, ppid: 1, cpu: 99, rssKB: 80_000, age: 6000,
+                              user: "me", command: "/System/Library/PrivateFrameworks/FileProvider.framework/Support/fileproviderd")
+        let f = Classifier(config: Config()).classify(p, in: Context.forTests(processes: [p]))
+        XCTAssertEqual(f?.reason, "99% CPU for 1h 40m - iCloud Drive or another file provider is syncing, let it finish")
+    }
+
     func testBoundPumaIsIgnoredEntirely() {
         let p = ProcessRecord(pid: 77, ppid: 1, cpu: 1, rssKB: 300_000, age: 864_000,
                               user: "me", command: "puma 8.0.2 (tcp://localhost:3000) [core]")

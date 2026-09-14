@@ -120,6 +120,7 @@ public struct Config: Codable, Equatable, Sendable {
     public var wedged = Wedged()
     public var neverKill = ["launchd", "kernel_task", "loginwindow", "WindowServer"]
     public var respawnsClean = ["duetexpertd", "System Events", "mdworker", "mds_stores", "sharingd"]
+    public var busyByDesign = ["fileproviderd": "iCloud Drive or another file provider is syncing, let it finish"]
     public var boot = Boot()
     public var disk = Disk()
 
@@ -134,6 +135,7 @@ public struct Config: Codable, Equatable, Sendable {
         wedged = try c.decodeIfPresent(Wedged.self, forKey: .wedged) ?? d.wedged
         neverKill = try c.decodeIfPresent([String].self, forKey: .neverKill) ?? d.neverKill
         respawnsClean = try c.decodeIfPresent([String].self, forKey: .respawnsClean) ?? d.respawnsClean
+        busyByDesign = try c.decodeIfPresent([String: String].self, forKey: .busyByDesign) ?? d.busyByDesign
         boot = try c.decodeIfPresent(Boot.self, forKey: .boot) ?? d.boot
         disk = try c.decodeIfPresent(Disk.self, forKey: .disk) ?? d.disk
     }
