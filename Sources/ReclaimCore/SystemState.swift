@@ -15,6 +15,9 @@ public struct SystemState: Equatable, Sendable {
         self.batteryPercent = batteryPercent; self.batteryState = batteryState; self.thermal = thermal
     }
 
+    public static let unknown = SystemState(swapUsedMB: nil, swapTotalMB: nil, uptimeSeconds: 0,
+                                            batteryPercent: nil, batteryState: nil, thermal: [])
+
     public var swapPercent: Double? {
         guard let used = swapUsedMB, let total = swapTotalMB, total > 0 else { return nil }
         return 100 * used / total

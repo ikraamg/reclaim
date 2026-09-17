@@ -40,13 +40,16 @@ public struct RunReport: Sendable {
     public var memoryHogs: [ProcessRecord]
     public var processCount: Int
     public var invalidRules: [Rule]
+    public var hotProcesses: [ProcessRecord] = []
+    public var system: SystemState = .unknown
     public var hint: String? = nil
 
     public init(header: String, evaluation: Evaluation, dryRun: Bool, actions: [Int32: String], memoryHogs: [ProcessRecord],
-                processCount: Int = 0, invalidRules: [Rule] = [], hint: String? = nil) {
+                processCount: Int = 0, invalidRules: [Rule] = [], hotProcesses: [ProcessRecord] = [], system: SystemState = .unknown,
+                hint: String? = nil) {
         self.header = header; self.evaluation = evaluation; self.dryRun = dryRun
         self.actions = actions; self.memoryHogs = memoryHogs; self.processCount = processCount
-        self.invalidRules = invalidRules; self.hint = hint
+        self.invalidRules = invalidRules; self.hotProcesses = hotProcesses; self.system = system; self.hint = hint
     }
 }
 

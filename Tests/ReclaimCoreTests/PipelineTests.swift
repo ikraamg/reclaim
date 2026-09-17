@@ -80,6 +80,15 @@ final class PipelineTests: XCTestCase {
         XCTAssertEqual(report.memoryHogs.map(\.pid), [9, 500])
         XCTAssertTrue(report.evaluation.swapJustHot)
     }
+
+    func testReportsHotProcessesAndSystemState() throws {
+        let cold = ProcessRecord(pid: 11, ppid: 1, cpu: 1, rssKB: 1000, age: 100, user: "me", command: "idle")
+        let hotCPU = ProcessRecord(pid: 12, ppid: 1, cpu: 55, rssKB: 1000, age: 100, user: "root", command: "WindowServer")
+        let hotMemory = ProcessRecord(pid: 13, ppid: 1, cpu: 0, rssKB: 5 * 1024 * 1024, age: 100, user: "me", command: "Xcode")
+        let report = try Pipeline.run(config: Config(), dryRun: true, previous: RunState(), on: machine([cold, hotCPU, hotMemory], swapPercent: 30)).get()
+        XCTAssertEqual(report.hotProcesses.map(\.pid), [12, 13])
+        XCTAssertEqual(report.system.swapPercent, 30)
+    }
 }
 
 private extension Result where Failure == PipelineError {

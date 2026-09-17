@@ -27,6 +27,8 @@ public enum Pipeline {
 
         let findings = processes.compactMap { classifier.classify($0, in: context) }
         let system = machine.system()
+        let memoryFloorKB = Int(config.alerts.memory.gigabytes * 1_048_576)
+        let hot = processes.filter { $0.cpu >= config.alerts.cpu.percent || $0.rssKB >= memoryFloorKB }
         let swapHot = (system.swapPercent ?? 0) >= 80
         let evaluation = Session.evaluate(findings, previous: previous, swapHot: swapHot, willKill: !dryRun)
 
@@ -38,6 +40,7 @@ public enum Pipeline {
         }
         let hogs = swapHot ? Array(processes.sorted { $0.rssKB > $1.rssKB }.prefix(5)) : []
         return .success(RunReport(header: system.header(), evaluation: evaluation, dryRun: dryRun, actions: actions,
-                                  memoryHogs: hogs, processCount: processes.count, invalidRules: classifier.invalidRules))
+                                  memoryHogs: hogs, processCount: processes.count, invalidRules: classifier.invalidRules,
+                                  hotProcesses: hot, system: system))
     }
 }
