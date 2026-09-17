@@ -18,7 +18,7 @@ final class PipelineTests: XCTestCase {
                 worktreeNote: { _ in "" },
                 system: { SystemState(swapUsedMB: swapPercent * 10, swapTotalMB: 1000, uptimeSeconds: 60,
                                       batteryPercent: nil, batteryState: nil, thermal: []) },
-                terminate: { calls.terminated.append($0); return "terminated" },
+                terminate: { calls.terminated.append($0.pid); return "terminated" },
                 selfPid: selfPid, parentPid: 998, isRoot: isRoot)
     }
 

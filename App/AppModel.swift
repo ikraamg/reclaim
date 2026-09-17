@@ -56,13 +56,14 @@ final class AppModel: ObservableObject {
 
     /// Terminate runs off the main thread (it waits two seconds for SIGTERM), then a fresh pass shows what is left.
     private func kill(_ pids: [Int32]) {
-        for pid in pids { monitor.beginKill(pid) }
+        let records = pids.compactMap { pid in monitor.findings.first { $0.process.pid == pid && Monitor.canKill($0) }?.process }
+        for record in records { monitor.beginKill(record.pid) }
         let machine = machine
         Task {
-            for pid in pids {
-                let result = await Task.detached { machine.terminate(pid) }.value
-                monitor.finishKill(pid, result: result)
-                log.notice("kill \(pid) by button: \(result, privacy: .public)")
+            for record in records {
+                let result = await Task.detached { machine.terminate(record) }.value
+                monitor.finishKill(record.pid, result: result)
+                log.notice("kill \(record.pid) by button: \(result, privacy: .public)")
             }
             await tick()
         }

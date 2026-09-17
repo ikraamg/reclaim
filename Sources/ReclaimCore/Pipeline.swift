@@ -33,7 +33,7 @@ public enum Pipeline {
         var actions: [Int32: String] = [:]
         if !dryRun && !evaluation.unchanged {
             for f in evaluation.findings where f.verdict == .kill {
-                actions[f.process.pid] = machine.terminate(f.process.pid)
+                actions[f.process.pid] = machine.terminate(f.process)
             }
         }
         let hogs = swapHot ? Array(processes.sorted { $0.rssKB > $1.rssKB }.prefix(5)) : []
