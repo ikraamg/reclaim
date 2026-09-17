@@ -55,7 +55,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func reloadConfig() {
         switch Config.load() {
-        case .success(let config): model.apply(config: config)
+        case .success(let config):
+            model.apply(config: config)
+            if config.alerts.notify { Task { await notifier.requestAuthorizationIfUndecided() } }
         case .failure(let error): model.reject(configMessage: String(describing: error))
         }
     }
