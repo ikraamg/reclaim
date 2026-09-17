@@ -41,11 +41,16 @@ Sweep (popover footer, or "Sweep…" in the menu) opens a window that runs `--di
 sections: each line's reclaim command with a Copy button, nothing that runs one. The first open runs both; Run again
 replaces the result.
 
-The app is ad-hoc signed for now, so a login item registered by one build may stop launching after the next
-build until it is toggled again; a stable signing identity fixes that.
-
     Reclaim --render findings out.png [--dark]   # draw a fixture; fixtures: findings killed empty unchanged badConfig swap disk boot
     scripts/render-fixtures.sh [dir]             # all of them, light and dark
+
+## Release
+
+    scripts/release.sh      # Release build → /Applications/Reclaim.app, re-points the CLI shim, launches it
+
+With `RECLAIM_SIGN_IDENTITY="Developer ID Application: Name (TEAMID)"` set and a notarytool keychain profile named
+`reclaim`, it also signs, notarizes and staples the bundle. Without them the build is ad-hoc: it runs, but a login
+item registered by one build may stop launching after the next until it is toggled again in Settings.
 
 ## Config
 
