@@ -63,4 +63,12 @@ final class TerminateTests: XCTestCase {
         XCTAssertEqual(Terminate.run(record(child.processIdentifier, command: "true"), grace: 0.1, currentCommand: { _ in nil }), "already gone")
         XCTAssertEqual(Terminate.run(record(child.processIdentifier, command: "true"), grace: 0.1, currentCommand: { _ in "" }), "already gone")
     }
+
+    func testLiveCommandMatchesTheSnapshot() throws {
+        let child = try spawn("sleep 30")
+        defer { child.terminate(); child.waitUntilExit() }
+        let record = ProcessSnapshot.live().first { $0.pid == child.processIdentifier }
+        XCTAssertNotNil(record)
+        XCTAssertEqual(Terminate.currentCommand(child.processIdentifier), record?.command)
+    }
 }
