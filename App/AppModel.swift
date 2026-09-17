@@ -3,9 +3,21 @@ import Combine
 import os
 import ReclaimCore
 
+/// The last disk and boot sweeps, kept until the next run replaces them. `running` holds the kinds still in flight.
+struct Sweeps {
+    var disk: Sweep?
+    var boot: Sweep?
+    var running: Set<String> = []
+    var startedAt = Date.distantPast
+    var ranAt: Date?
+    var seconds: Int?
+    var isRunning: Bool { !running.isEmpty }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var monitor: Monitor
+    @Published private(set) var sweeps = Sweeps()
     private let machine: Machine
     private let log = Logger(subsystem: "com.ikraam.Reclaim", category: "monitor")
     private var loop: Task<Void, Never>?
@@ -92,5 +104,23 @@ final class AppModel: ObservableObject {
     func reject(configMessage: String) {
         monitor.reject(configMessage: configMessage, at: Date())
         log.error("config rejected: \(configMessage, privacy: .public)")
+    }
+
+    /// Both sweeps off the main thread; each result replaces the last one as it lands. Nothing here runs a reclaim command.
+    func runSweeps() {
+        guard !sweeps.isRunning else { return }
+        sweeps.running = ["disk", "boot"]
+        sweeps.startedAt = Date()
+        let disk = monitor.config.disk, boot = monitor.config.boot
+        Task { finish(sweep: await Task.detached { DiskSweep.run(disk: disk) }.value) }
+        Task { finish(sweep: await Task.detached { BootSweep.run(boot: boot, header: SystemState.read().header()) }.value) }
+    }
+
+    private func finish(sweep: Sweep) {
+        if sweep.kind == "disk" { sweeps.disk = sweep } else { sweeps.boot = sweep }
+        sweeps.running.remove(sweep.kind)
+        let seconds = Int(Date().timeIntervalSince(sweeps.startedAt))
+        log.notice("sweep \(sweep.kind, privacy: .public): \(sweep.sections.count) sections in \(seconds)s")
+        if sweeps.running.isEmpty { sweeps.ranAt = Date(); sweeps.seconds = seconds }
     }
 }
