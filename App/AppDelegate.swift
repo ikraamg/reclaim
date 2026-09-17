@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var subscriptions: Set<AnyCancellable> = []
     private var configWatcher: ConfigWatcher?
     private var settingsWindow: NSWindow?
+    private var sweepsWindow: NSWindow?
     private lazy var settingsModel = SettingsModel(config: model.monitor.config)
     private let notifier = Notifier()
     private var popoverActions = PopoverActions()
@@ -31,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         popoverActions = PopoverActions(kill: { [weak self] in self?.model.kill($0) },
                                         killAll: { [weak self] in self?.model.killAll() },
+                                        sweep: { [weak self] in self?.openSweeps() },
                                         settings: { [weak self] in self?.openSettings() },
                                         quit: { NSApp.terminate(nil) })
         popover.behavior = .transient
@@ -92,6 +94,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
+        let sweep = NSMenuItem(title: "Sweep…", action: #selector(openSweeps), keyEquivalent: "s")
+        sweep.target = self
+        menu.addItem(sweep)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit Reclaim", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = menu
@@ -115,6 +120,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
+    /// Opens the sweeps window and starts both sweeps the first time. The window shows and copies commands; it never runs one.
+    @objc func openSweeps() {
+        if sweepsWindow == nil {
+            let actions = SweepsActions(run: { [weak self] in self?.model.runSweeps() },
+                                        copy: { NSPasteboard.general.clearContents(); NSPasteboard.general.setString($0, forType: .string) })
+            let window = NSWindow(contentViewController: NSHostingController(rootView: LiveSweepsView(model: model, actions: actions)))
+            window.title = "Reclaim Sweeps"
+            window.styleMask = [.titled, .closable, .resizable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            sweepsWindow = window
+        }
+        if model.sweeps.ranAt == nil { model.runSweeps() }
+        popover.performClose(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        sweepsWindow?.makeKeyAndOrderFront(nil)
+    }
+
     private func mainMenu() -> NSMenu {
         let menu = NSMenu()
         let app = NSMenuItem()
@@ -122,6 +145,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         app.submenu?.addItem(settings)
+        let sweep = NSMenuItem(title: "Sweep…", action: #selector(openSweeps), keyEquivalent: "s")
+        sweep.target = self
+        app.submenu?.addItem(sweep)
         app.submenu?.addItem(.separator())
         app.submenu?.addItem(NSMenuItem(title: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
         app.submenu?.addItem(NSMenuItem(title: "Quit Reclaim", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -134,4 +160,10 @@ struct LivePopoverView: View {
     @ObservedObject var model: AppModel
     let actions: PopoverActions
     var body: some View { PopoverView(monitor: model.monitor, actions: actions) }
+}
+
+struct LiveSweepsView: View {
+    @ObservedObject var model: AppModel
+    let actions: SweepsActions
+    var body: some View { SweepsView(sweeps: model.sweeps, actions: actions) }
 }

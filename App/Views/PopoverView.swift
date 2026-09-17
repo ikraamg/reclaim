@@ -4,6 +4,7 @@ import ReclaimCore
 struct PopoverActions {
     var kill: (Int32) -> Void = { _ in }
     var killAll: () -> Void = {}
+    var sweep: () -> Void = {}
     var settings: () -> Void = {}
     var quit: () -> Void = {}
 }
@@ -106,6 +107,7 @@ struct PopoverView: View {
         HStack {
             Text(monitor.footer).font(Theme.mono).foregroundStyle(.secondary)
             Spacer()
+            Button("Sweep") { actions.sweep() }.buttonStyle(.plain).font(Theme.secondary).padding(.trailing, 12)
             Button("Settings") { actions.settings() }.buttonStyle(.plain).font(Theme.secondary)
             Button("Quit") { actions.quit() }.buttonStyle(.plain).font(Theme.secondary).padding(.leading, 12)
         }
