@@ -73,6 +73,5 @@ never signals pid <= 1. Sweeps only read (du, docker system df, git status); the
 
 ## For agents
 
-`reclaim --dry-run --json` is the safe first call. Every finding carries pid, category, verdict, reason and
-an `action` (null when nothing was done). Sweep lines carry `bytes`, `label`, `detail`, `command` (null when
-nothing should be run) and `nested`. The config file is the API: edit it, then `reclaim --dry-run --json`.
+`reclaim --dry-run --json` is the safe first call. The JSON schemas, what KILL and REPORT mean, the config as the
+API, and how to run it on a loop are in [docs/agents.md](docs/agents.md).
