@@ -13,6 +13,8 @@ public struct ProcessRecord: Equatable, Sendable {
         self.pid = pid; self.ppid = ppid; self.cpu = cpu; self.rssKB = rssKB
         self.age = age; self.user = user; self.command = command
     }
+
+    public var name: String { ((command.split(separator: " ").first.map(String.init) ?? "") as NSString).lastPathComponent }
 }
 
 public enum ProcessSnapshot {

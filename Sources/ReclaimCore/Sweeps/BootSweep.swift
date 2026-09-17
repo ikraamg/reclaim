@@ -13,8 +13,7 @@ public enum BootSweep {
 
     static func cpuHogs(_ boot: Boot, _ procs: [ProcessRecord]) -> SweepSection {
         let lines = BootParse.cpuHogs(procs, boot: boot).flatMap { p, hint -> [SweepLine] in
-            let comm = ((p.command.split(separator: " ").first.map(String.init) ?? "") as NSString).lastPathComponent
-            var out = [SweepLine(label: comm, detail: "\(Int(p.cpu.rounded()))% CPU for \(human(age: p.age)) (pid \(p.pid))")]
+            var out = [SweepLine(label: p.name, detail: "\(Int(p.cpu.rounded()))% CPU for \(human(age: p.age)) (pid \(p.pid))")]
             if !hint.isEmpty { out.append(SweepLine(label: "", detail: hint, nested: true)) }
             return out
         }
