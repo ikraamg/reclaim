@@ -62,7 +62,8 @@ final class SustainedTests: XCTestCase {
                        [Alert(kind: .battery, pid: nil, title: "Battery draining 24%/h", detail: "from 81% to 75% in 15m")])
         XCTAssertEqual(s.observe(hot: [], system: system(battery: (74, "discharging")), alerts: alerts, at: at(20)), [])
         XCTAssertEqual(s.observe(hot: [], system: system(battery: (74, "charging")), alerts: alerts, at: at(21)), [])
-        XCTAssertEqual(s.observe(hot: [], system: system(battery: (74, "discharging")), alerts: alerts, at: at(22)), [])
+        XCTAssertEqual(s.observe(hot: [], system: system(battery: (65, "discharging")), alerts: alerts, at: at(22)), [])
+        XCTAssertEqual(s.observe(hot: [], system: system(battery: (64, "discharging")), alerts: alerts, at: at(30)), [])
     }
 
     func testSlowDrainNeverFires() {
