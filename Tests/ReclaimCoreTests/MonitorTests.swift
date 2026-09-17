@@ -129,6 +129,13 @@ final class MonitorTests: XCTestCase {
         XCTAssertEqual(m.apply(report([finding(1)], dryRun: false, actions: [1: "terminated"]), at: at(30)), [])
     }
 
+    func testAutomaticKillIsAnnouncedEvenAfterACandidateNotification() {
+        var m = monitor()
+        XCTAssertEqual(m.apply(report([finding(1)]), at: t0), [.killCandidate(finding(1))])
+        XCTAssertEqual(m.apply(report([finding(1)], dryRun: false, actions: [1: "terminated"]), at: at(30)),
+                       [.killed(finding(1), action: "terminated")])
+    }
+
     func testSustainedAlertsComeThroughApply() {
         var m = monitor()
         var config = Config(); config.alerts.cpu.minutes = 1

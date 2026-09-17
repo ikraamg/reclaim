@@ -24,6 +24,7 @@ public struct Monitor: Sendable {
     public var pending: Set<Int32> = []
     public var manualActions: [Int32: String] = [:]
     public var notified: Set<Int32> = []
+    public var announcedKills: Set<Int32> = []
     public var sustained = Sustained()
     public var timeZone: TimeZone
 
@@ -46,16 +47,18 @@ public struct Monitor: Sendable {
         manualActions = manualActions.filter { alive.contains($0.key) }
         pending = pending.intersection(alive)
         notified = notified.intersection(alive)
+        announcedKills = announcedKills.intersection(alive)
         var events: [Event] = []
-        for f in report.evaluation.findings where f.verdict == .kill && !notified.contains(f.process.pid) {
+        for f in report.evaluation.findings where f.verdict == .kill {
             if let action = report.actions[f.process.pid] {
-                events.append(.killed(f, action: action))
-            } else if report.dryRun {
+                if !announcedKills.contains(f.process.pid) {
+                    events.append(.killed(f, action: action))
+                    announcedKills.insert(f.process.pid)
+                }
+            } else if report.dryRun && !notified.contains(f.process.pid) {
                 events.append(.killCandidate(f))
-            } else {
-                continue
+                notified.insert(f.process.pid)
             }
-            notified.insert(f.process.pid)
         }
         events += sustained.observe(hot: report.hotProcesses, system: report.system, alerts: config.alerts, at: now).map(Event.sustained)
         return events

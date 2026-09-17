@@ -44,6 +44,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             content.title = "Killed \(f.process.name)"
             content.body = "\(action) · \(f.reason)"
             identifier = "killed-\(f.process.pid)"
+            center.removeDeliveredNotifications(withIdentifiers: ["kill-\(f.process.pid)"])
         case .sustained(let alert):
             content.title = alert.title
             content.body = alert.detail
