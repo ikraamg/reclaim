@@ -5,8 +5,8 @@ import ReclaimCore
 
 @MainActor
 final class SettingsModel: ObservableObject {
-    @Published var pollSeconds: Int
-    @Published var autoKill: Bool
+    @Published var pollSeconds = 30
+    @Published var autoKill = false
     @Published var startAtLogin = LoginItem.isEnabled
     @Published var loginNeedsApproval = LoginItem.needsApproval
     @Published var cliStatus = CLIInstall.status
@@ -22,8 +22,6 @@ final class SettingsModel: ObservableObject {
     @Published var notificationStatus = ""
 
     init(config: Config) {
-        pollSeconds = config.pollSeconds
-        autoKill = config.autoKill
         load(config: config)
     }
 
@@ -83,16 +81,13 @@ final class SettingsModel: ObservableObject {
     }
 }
 
-enum SettingsTab: Hashable { case general, alerts }
-
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
-    @State var tab: SettingsTab = .general
 
     var body: some View {
-        TabView(selection: $tab) {
-            general.tabItem { Text("General") }.tag(SettingsTab.general)
-            alerts.tabItem { Text("Alerts") }.tag(SettingsTab.alerts)
+        TabView {
+            general.tabItem { Text("General") }
+            alerts.tabItem { Text("Alerts") }
         }
         .frame(width: 440)
         .fixedSize(horizontal: false, vertical: true)
