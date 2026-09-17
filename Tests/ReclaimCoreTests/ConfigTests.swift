@@ -103,4 +103,17 @@ final class ConfigTests: XCTestCase {
         XCTAssertEqual(disk["futureKnob"] as? Bool, true)
         XCTAssertEqual(try Config.load(from: url).get(), c)
     }
+
+    func testAlertsDecodeWithDefaultsForMissingKeys() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("alerts-\(UUID()).json")
+        try #"{ "alerts": { "cpu": { "minutes": 5 }, "thermal": false } }"#.write(to: url, atomically: true, encoding: .utf8)
+        let config = try Config.load(from: url).get()
+        XCTAssertEqual(config.alerts.cpu.percent, 50)
+        XCTAssertEqual(config.alerts.cpu.minutes, 5)
+        XCTAssertEqual(config.alerts.memory.gigabytes, 4)
+        XCTAssertFalse(config.alerts.thermal)
+        XCTAssertTrue(config.alerts.notify)
+        XCTAssertEqual(config.alerts.batteryDrainPerHour, 20)
+        XCTAssertEqual(Config().alerts, Alerts())
+    }
 }

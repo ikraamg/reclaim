@@ -108,6 +108,48 @@ public struct Disk: Codable, Equatable, Sendable {
     }
 }
 
+public struct CPUAlert: Codable, Equatable, Sendable {
+    public var percent: Double = 50
+    public var minutes: Int = 30
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        percent = try c.decodeIfPresent(Double.self, forKey: .percent) ?? 50
+        minutes = try c.decodeIfPresent(Int.self, forKey: .minutes) ?? 30
+    }
+}
+
+public struct MemoryAlert: Codable, Equatable, Sendable {
+    public var gigabytes: Double = 4
+    public var minutes: Int = 10
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        gigabytes = try c.decodeIfPresent(Double.self, forKey: .gigabytes) ?? 4
+        minutes = try c.decodeIfPresent(Int.self, forKey: .minutes) ?? 10
+    }
+}
+
+public struct Alerts: Codable, Equatable, Sendable {
+    public var notify = true
+    public var cpu = CPUAlert()
+    public var memory = MemoryAlert()
+    public var swapPercent: Double = 80
+    public var thermal = true
+    public var batteryDrainPerHour: Double = 20
+    public init() {}
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = Alerts()
+        notify = try c.decodeIfPresent(Bool.self, forKey: .notify) ?? d.notify
+        cpu = try c.decodeIfPresent(CPUAlert.self, forKey: .cpu) ?? d.cpu
+        memory = try c.decodeIfPresent(MemoryAlert.self, forKey: .memory) ?? d.memory
+        swapPercent = try c.decodeIfPresent(Double.self, forKey: .swapPercent) ?? d.swapPercent
+        thermal = try c.decodeIfPresent(Bool.self, forKey: .thermal) ?? d.thermal
+        batteryDrainPerHour = try c.decodeIfPresent(Double.self, forKey: .batteryDrainPerHour) ?? d.batteryDrainPerHour
+    }
+}
+
 public enum ConfigError: Error, Equatable {
     case unreadable(URL)
     case invalid(String)
@@ -123,6 +165,7 @@ public struct Config: Codable, Equatable, Sendable {
     public var busyByDesign = ["fileproviderd": "iCloud Drive or another file provider is syncing, let it finish"]
     public var boot = Boot()
     public var disk = Disk()
+    public var alerts = Alerts()
 
     public init() {}
 
@@ -138,6 +181,7 @@ public struct Config: Codable, Equatable, Sendable {
         busyByDesign = try c.decodeIfPresent([String: String].self, forKey: .busyByDesign) ?? d.busyByDesign
         boot = try c.decodeIfPresent(Boot.self, forKey: .boot) ?? d.boot
         disk = try c.decodeIfPresent(Disk.self, forKey: .disk) ?? d.disk
+        alerts = try c.decodeIfPresent(Alerts.self, forKey: .alerts) ?? d.alerts
     }
 
     public static let defaultURL = FileManager.default
