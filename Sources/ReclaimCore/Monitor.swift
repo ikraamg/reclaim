@@ -7,6 +7,12 @@ public struct Monitor: Sendable {
         public var since: Date
     }
 
+    public enum Event: Equatable, Sendable {
+        case killCandidate(Finding)
+        case killed(Finding, action: String)
+        case sustained(Alert)
+    }
+
     public var config: Config
     public var report: RunReport?
     public var lastTick: Date?
@@ -17,6 +23,8 @@ public struct Monitor: Sendable {
     public var lastError: String?
     public var pending: Set<Int32> = []
     public var manualActions: [Int32: String] = [:]
+    public var notified: Set<Int32> = []
+    public var sustained = Sustained()
     public var timeZone: TimeZone
 
     public init(config: Config = Config(), timeZone: TimeZone = .current) {
@@ -26,7 +34,9 @@ public struct Monitor: Sendable {
 
     // MARK: Mutations
 
-    public mutating func apply(_ report: RunReport, at now: Date) {
+    /// Returns what is new this tick: KILL rows not announced before, automatic kills, and alerts that just fired.
+    @discardableResult
+    public mutating func apply(_ report: RunReport, at now: Date) -> [Event] {
         if !report.evaluation.unchanged || changedAt == nil { changedAt = now }
         self.report = report
         lastTick = now
@@ -35,6 +45,20 @@ public struct Monitor: Sendable {
         let alive = Set(report.evaluation.findings.map(\.process.pid))
         manualActions = manualActions.filter { alive.contains($0.key) }
         pending = pending.intersection(alive)
+        notified = notified.intersection(alive)
+        var events: [Event] = []
+        for f in report.evaluation.findings where f.verdict == .kill && !notified.contains(f.process.pid) {
+            if let action = report.actions[f.process.pid] {
+                events.append(.killed(f, action: action))
+            } else if report.dryRun {
+                events.append(.killCandidate(f))
+            } else {
+                continue
+            }
+            notified.insert(f.process.pid)
+        }
+        events += sustained.observe(hot: report.hotProcesses, system: report.system, alerts: config.alerts, at: now).map(Event.sustained)
+        return events
     }
 
     public mutating func apply(failure: PipelineError, at now: Date) {

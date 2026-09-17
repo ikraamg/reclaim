@@ -13,9 +13,9 @@ final class MonitorTests: XCTestCase {
         Finding(process: record(pid, cpu: cpu, rssKB: rssKB), category: category, verdict: verdict, reason: "because")
     }
     func report(_ findings: [Finding], unchanged: Bool = false, dryRun: Bool = true, actions: [Int32: String] = [:],
-                hogs: [ProcessRecord] = [], processCount: Int = 412, invalidRules: [Rule] = []) -> RunReport {
+                hogs: [ProcessRecord] = [], processCount: Int = 412, invalidRules: [Rule] = [], hot: [ProcessRecord] = []) -> RunReport {
         RunReport(header: "swap n/a  ·  up 1h 0m", evaluation: Evaluation(findings: findings, unchanged: unchanged, swapJustHot: false, state: RunState()),
-                  dryRun: dryRun, actions: actions, memoryHogs: hogs, processCount: processCount, invalidRules: invalidRules)
+                  dryRun: dryRun, actions: actions, memoryHogs: hogs, processCount: processCount, invalidRules: invalidRules, hotProcesses: hot)
     }
     func monitor() -> Monitor { Monitor(config: Config(), timeZone: utc) }
 
@@ -111,6 +111,32 @@ final class MonitorTests: XCTestCase {
         XCTAssertEqual(m.action(for: 1), "terminated")
         m.apply(report([finding(2)]), at: at(30))
         XCTAssertNil(m.action(for: 1))   // row is gone, so is its note
+    }
+
+    func testKillCandidatesAreAnnouncedOncePerPid() {
+        var m = monitor()
+        let first = m.apply(report([finding(1), finding(2, "busy-loop", .report)]), at: t0)
+        XCTAssertEqual(first, [.killCandidate(finding(1))])
+        XCTAssertEqual(m.apply(report([finding(1)], unchanged: true), at: at(30)), [])
+        XCTAssertEqual(m.apply(report([finding(2)]), at: at(60)), [.killCandidate(finding(2))])
+        XCTAssertEqual(m.apply(report([finding(1)]), at: at(90)), [.killCandidate(finding(1))])   // it left and came back
+    }
+
+    func testAutomaticKillsAreAnnouncedWithTheirAction() {
+        var m = monitor()
+        let events = m.apply(report([finding(1)], dryRun: false, actions: [1: "terminated"]), at: t0)
+        XCTAssertEqual(events, [.killed(finding(1), action: "terminated")])
+        XCTAssertEqual(m.apply(report([finding(1)], dryRun: false, actions: [1: "terminated"]), at: at(30)), [])
+    }
+
+    func testSustainedAlertsComeThroughApply() {
+        var m = monitor()
+        var config = Config(); config.alerts.cpu.minutes = 1
+        m.apply(config: config)
+        let hog = record(7, cpu: 90, command: "/usr/bin/hog")
+        XCTAssertEqual(m.apply(report([], hot: [hog]), at: t0), [])
+        XCTAssertEqual(m.apply(report([], hot: [hog]), at: at(60)),
+                       [.sustained(Alert(kind: .cpu, pid: 7, title: "CPU · hog", detail: "90% for 1m (pid 7)"))])
     }
 
     func testHogsGroup() {
