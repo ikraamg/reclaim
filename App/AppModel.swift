@@ -55,7 +55,8 @@ final class AppModel: ObservableObject {
 
     /// A notification's Kill: the row must still be the process the notification named.
     func kill(_ pid: Int32, expecting command: String) {
-        guard monitor.killRows.contains(where: { $0.process.pid == pid && $0.process.command == command }) else {
+        guard monitor.killRows.contains(where: { $0.process.pid == pid && $0.process.command == command }),
+              monitor.action(for: pid) == nil else {
             log.notice("stale notification for \(pid), not killing")
             return
         }
