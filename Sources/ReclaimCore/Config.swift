@@ -112,6 +112,10 @@ public struct CPUAlert: Codable, Equatable, Sendable {
     public var percent: Double = 50
     public var minutes: Int = 30
     public init() {}
+    public init(percent: Double, minutes: Int) {
+        self.percent = percent
+        self.minutes = minutes
+    }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         percent = try c.decodeIfPresent(Double.self, forKey: .percent) ?? 50
@@ -123,6 +127,10 @@ public struct MemoryAlert: Codable, Equatable, Sendable {
     public var gigabytes: Double = 4
     public var minutes: Int = 10
     public init() {}
+    public init(gigabytes: Double, minutes: Int) {
+        self.gigabytes = gigabytes
+        self.minutes = minutes
+    }
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         gigabytes = try c.decodeIfPresent(Double.self, forKey: .gigabytes) ?? 4

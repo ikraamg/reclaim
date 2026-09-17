@@ -103,9 +103,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
             settingsWindow = window
         }
-        settingsModel.pollSeconds = model.monitor.config.pollSeconds
-        settingsModel.autoKill = model.monitor.config.autoKill
+        settingsModel.load(config: model.monitor.config)
         settingsModel.startAtLogin = LoginItem.isEnabled
+        Task { settingsModel.refreshNotificationStatus(await notifier.authorizationStatus()) }
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
