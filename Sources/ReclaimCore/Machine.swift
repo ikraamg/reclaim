@@ -26,9 +26,11 @@ public struct Machine: Sendable {
         self.selfPid = selfPid; self.parentPid = parentPid; self.isRoot = isRoot
     }
 
+    public static let currentUser = shell(["/usr/bin/id", "-un"])?.trimmingCharacters(in: .whitespacesAndNewlines)
+
     public static let live = Machine(
         processes: { ProcessSnapshot.live() },
-        user: { shell(["/usr/bin/id", "-un"])?.trimmingCharacters(in: .whitespacesAndNewlines) },
+        user: { currentUser },
         listeners: { Probe.listeners() },
         cwd: { Probe.cwd(of: $0) },
         worktreeNote: { Worktree.note(cwd: $0) },

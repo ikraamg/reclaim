@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private lazy var settingsModel = SettingsModel(config: model.monitor.config)
     private let notifier = Notifier()
+    private var popoverActions = PopoverActions()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         notifier.start()
@@ -28,13 +29,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notifier.onKill = { [weak self] pid, command in self?.model.kill(pid, expecting: command) }
         if let configError { model.reject(configMessage: configError) } else { model.apply(config: config) }
 
-        let actions = PopoverActions(kill: { [weak self] in self?.model.kill($0) },
-                                     killAll: { [weak self] in self?.model.killAll() },
-                                     settings: { [weak self] in self?.openSettings() },
-                                     quit: { NSApp.terminate(nil) })
-        let hosting = NSHostingController(rootView: LivePopoverView(model: model, actions: actions))
-        hosting.sizingOptions = .preferredContentSize
-        popover.contentViewController = hosting
+        popoverActions = PopoverActions(kill: { [weak self] in self?.model.kill($0) },
+                                        killAll: { [weak self] in self?.model.killAll() },
+                                        settings: { [weak self] in self?.openSettings() },
+                                        quit: { NSApp.terminate(nil) })
         popover.behavior = .transient
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -77,6 +75,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func togglePopover(_ button: NSStatusBarButton) {
         if popover.isShown { popover.performClose(nil); return }
+        if popover.contentViewController == nil {
+            let hosting = NSHostingController(rootView: LivePopoverView(model: model, actions: popoverActions))
+            hosting.sizingOptions = .preferredContentSize
+            popover.contentViewController = hosting
+        }
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }
