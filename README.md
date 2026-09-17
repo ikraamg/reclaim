@@ -37,10 +37,14 @@ kill, and one when something has held too long: CPU over 50% for 30m, memory ove
 pressure, battery draining over 20%/h. Each fires once and again only after it cleared. Thresholds live under
 `"alerts"` in the config.
 
+Sweep (popover footer, or "Sweep…" in the menu) opens a window that runs `--disk` and `--boot` and shows their
+sections: each line's reclaim command with a Copy button, nothing that runs one. The first open runs both; Run again
+replaces the result.
+
 The app is ad-hoc signed for now, so a login item registered by one build may stop launching after the next
 build until it is toggled again; a stable signing identity fixes that.
 
-    Reclaim --render findings out.png [--dark]   # draw a popover fixture; fixtures: findings killed empty unchanged badConfig swap
+    Reclaim --render findings out.png [--dark]   # draw a fixture; fixtures: findings killed empty unchanged badConfig swap disk boot
     scripts/render-fixtures.sh [dir]             # all of them, light and dark
 
 ## Config
