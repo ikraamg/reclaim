@@ -32,6 +32,11 @@ reloads `config.json` when it changes and keeps the last good one if the file br
 interval, `autoKill`, start at login, and installing `~/.local/bin/reclaim` as a shim that runs the app's
 binary (`Reclaim --dry-run` and every other flag work on the bundle's executable directly).
 
+Alerts (Settings > Alerts): a notification with a Kill button for each new row it would kill, one for each automatic
+kill, and one when something has held too long: CPU over 50% for 30m, memory over 4GB for 10m, swap over 80%, thermal
+pressure, battery draining over 20%/h. Each fires once and again only after it cleared. Thresholds live under
+`"alerts"` in the config.
+
 The app is ad-hoc signed for now, so a login item registered by one build may stop launching after the next
 build until it is toggled again; a stable signing identity fixes that.
 
@@ -50,7 +55,8 @@ build until it is toggled again; a stable signing identity fixes that.
       ],
       "neverKill": ["launchd", "kernel_task", "loginwindow", "WindowServer"],
       "boot": { "keep": ["homebrew.mxcl.", "com.ikraam."] },
-      "disk": { "worktreeRoot": "~/Documents/GitHub", "worktreeStaleDays": 21 }
+      "disk": { "worktreeRoot": "~/Documents/GitHub", "worktreeStaleDays": 21 },
+      "alerts": { "notify": true, "cpu": { "percent": 50, "minutes": 30 }, "memory": { "gigabytes": 4, "minutes": 10 }, "swapPercent": 80, "thermal": true, "batteryDrainPerHour": 20 }
     }
 
 Rules are first-match. A rule with `minCPU` never kills below it. A bad regex is reported on stderr and skipped.
