@@ -38,13 +38,14 @@ struct SweepsView: View {
         if sweep != nil || running {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    Text(title).font(Theme.groupTitle)
+                    Text(title).font(Theme.title)
                     if running { Text("running…").font(Theme.secondary).foregroundStyle(.secondary) }
                 }
                 if let sweep {
+                    let gutter = sweep.sections.contains { $0.lines.contains { $0.bytes != nil } }   // boot has no sizes
                     lines(sweep.header)
                     ForEach(Array(sweep.sections.enumerated()), id: \.offset) { _, section in
-                        if !section.lines.isEmpty { self.section(section) }
+                        if !section.lines.isEmpty { self.section(section, gutter: gutter) }
                     }
                     lines(sweep.footer)
                 }
@@ -64,21 +65,24 @@ struct SweepsView: View {
         }
     }
 
-    func section(_ s: SweepSection) -> some View {
+    func section(_ s: SweepSection, gutter: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
+            Hairline().opacity(0.6).padding(.top, 4)
             Text(s.bytes.map { "\(s.title) · \(gigabytes($0).trimmingCharacters(in: .whitespaces)) reclaimable" } ?? s.title)
-                .font(Theme.labelMedium)
+                .font(Theme.groupTitle)
                 .padding(.top, 6)
-            ForEach(Array(s.lines.enumerated()), id: \.offset) { _, line in row(line) }
+            ForEach(Array(s.lines.enumerated()), id: \.offset) { _, line in row(line, gutter: gutter) }
         }
     }
 
-    func row(_ line: SweepLine) -> some View {
+    func row(_ line: SweepLine, gutter: Bool) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Text(line.bytes.map { gigabytes($0) } ?? "")
-                .font(Theme.mono)
-                .foregroundStyle(.secondary)
-                .frame(width: 64, alignment: .trailing)
+            if gutter {
+                Text(line.bytes.map { gigabytes($0) } ?? "")
+                    .font(Theme.mono)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 64, alignment: .trailing)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 if !line.label.isEmpty {
                     Text(line.label).font(Theme.labelMedium).lineLimit(1).truncationMode(.middle).help(line.label)

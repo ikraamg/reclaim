@@ -7,6 +7,7 @@ enum Theme {
     static let secondary = Font.system(.callout)
     static let mono = Font.system(.callout, design: .monospaced)
     static let groupTitle = Font.system(.callout).weight(.bold)
+    static let title = Font.system(.body).weight(.bold)
     static let hairline = Color.primary.opacity(0.18)
 }
 
