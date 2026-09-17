@@ -12,8 +12,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var configWatcher: ConfigWatcher?
     private var settingsWindow: NSWindow?
     private lazy var settingsModel = SettingsModel(config: model.monitor.config)
+    private let notifier = Notifier()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        notifier.start()
         NSApp.mainMenu = mainMenu()
         let config: Config
         var configError: String?
@@ -22,6 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .failure(let e): config = Config(); configError = String(describing: e)
         }
         model = AppModel(config: config)
+        model.notify = { [weak self] in self?.notifier.post($0) }
+        notifier.onKill = { [weak self] pid, command in self?.model.kill(pid, expecting: command) }
         if let configError { model.reject(configMessage: configError) } else { model.apply(config: config) }
 
         let actions = PopoverActions(kill: { [weak self] in self?.model.kill($0) },
@@ -48,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         configWatcher = ConfigWatcher(fileURL: Config.defaultURL) { [weak self] in self?.reloadConfig() }
         configWatcher?.start()
         model.start()
+        if config.alerts.notify { Task { await notifier.requestAuthorizationIfUndecided() } }
     }
 
     private func reloadConfig() {

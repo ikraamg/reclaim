@@ -10,6 +10,7 @@ final class AppModel: ObservableObject {
     private let log = Logger(subsystem: "com.ikraam.Reclaim", category: "monitor")
     private var loop: Task<Void, Never>?
     private var ticking = false
+    var notify: (Monitor.Event) -> Void = { _ in }
 
     init(config: Config, machine: Machine = .live) {
         monitor = Monitor(config: config)
@@ -40,7 +41,9 @@ final class AppModel: ObservableObject {
         }.value
         switch result {
         case .success(let report):
-            monitor.apply(report, at: Date())
+            let events = monitor.apply(report, at: Date())
+            for event in events { log.notice("event: \(String(describing: event).prefix(120), privacy: .public)") }
+            if monitor.config.alerts.notify { events.forEach(notify) }
             for (pid, action) in report.actions { log.notice("killed \(pid): \(action, privacy: .public)") }
         case .failure(let error):
             monitor.apply(failure: error, at: Date())
@@ -49,6 +52,15 @@ final class AppModel: ObservableObject {
     }
 
     func kill(_ pid: Int32) { kill([pid]) }
+
+    /// A notification's Kill: the row must still be the process the notification named.
+    func kill(_ pid: Int32, expecting command: String) {
+        guard monitor.killRows.contains(where: { $0.process.pid == pid && $0.process.command == command }) else {
+            log.notice("stale notification for \(pid), not killing")
+            return
+        }
+        kill(pid)
+    }
 
     func killAll() {
         kill(monitor.killRows.map(\.process.pid).filter { monitor.action(for: $0) == nil })
