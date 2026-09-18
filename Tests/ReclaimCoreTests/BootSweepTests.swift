@@ -22,7 +22,7 @@ final class BootSweepTests: XCTestCase {
         ])
         let fs = FileSystem(contents: { path in
                                 switch path {
-                                case "/Users/me/Library/LaunchAgents": return ["com.evil.plist", "com.grammarly.x.plist"]
+                                case "/Users/me/Library/LaunchAgents": return ["com.evil.plist", "homebrew.mxcl.redis.plist"]
                                 case "/opt/homebrew/var": return ["postgresql@14", "postgresql@16"]
                                 default: return nil
                                 }

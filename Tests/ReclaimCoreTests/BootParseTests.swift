@@ -21,7 +21,7 @@ final class BootParseTests: XCTestCase {
 
     func testLaunchItemsSkipAppleAndKeepList() {
         let items = BootParse.launchItems(folder: "/Users/me/Library/LaunchAgents",
-                                          names: ["com.apple.foo.plist", "com.grammarly.x.plist", "com.evil.plist", "notes.txt", "us.zoom.ZoomDaemon.plist"],
+                                          names: ["com.apple.foo.plist", "homebrew.mxcl.redis.plist", "com.evil.plist", "notes.txt", "com.docker.vmnetd.plist"],
                                           keep: Boot().keep)
         XCTAssertEqual(items.map(\.path), ["/Users/me/Library/LaunchAgents/com.evil.plist"])
         XCTAssertEqual(items[0].unloadCommand, "launchctl bootout gui/$(id -u) '/Users/me/Library/LaunchAgents/com.evil.plist'")

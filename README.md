@@ -63,7 +63,7 @@ item registered by one build may stop launching after the next until it is toggl
         { "name": "busy-loop", "match": "(?:zsh|bash|sh|dash)\\b.*-c\\b.*while\\s+(?::|true)\\s*;?\\s*do", "minAgeSeconds": 3600, "evidence": "orphaned", "minCPU": 20 }
       ],
       "neverKill": ["launchd", "kernel_task", "loginwindow", "WindowServer"],
-      "boot": { "keep": ["homebrew.mxcl.", "com.ikraam."] },
+      "boot": { "keep": ["homebrew.mxcl.", "com.docker.", "com.yourname."] },
       "disk": { "worktreeRoot": "~/Documents/GitHub", "worktreeStaleDays": 21 },
       "alerts": { "notify": true, "cpu": { "percent": 50, "minutes": 30 }, "memory": { "gigabytes": 4, "minutes": 10 }, "swapPercent": 80, "thermal": true, "batteryDrainPerHour": 20 }
     }

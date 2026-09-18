@@ -17,8 +17,7 @@ final class ConfigTests: XCTestCase {
 
     func testBootAndDiskDefaultsMatchTheScript() {
         let c = Config()
-        XCTAssertEqual(c.boot.keep, ["homebrew.mxcl.", "com.grammarly.", "com.ikraam.", "com.logi.optionsplus",
-                                     "com.docker.", "com.nordvpn.macos.helper", "us.zoom.ZoomDaemon"])
+        XCTAssertEqual(c.boot.keep, ["homebrew.mxcl.", "com.docker."])
         XCTAssertEqual(c.boot.cpuHog.percent, 50); XCTAssertEqual(c.boot.cpuHog.minAgeSeconds, 1800)
         XCTAssertEqual(c.disk.worktreeStaleDays, 21)
         XCTAssertEqual(c.disk.regenerableInRepo, ["tmp", "log", "node_modules", "coverage"])
@@ -32,7 +31,7 @@ final class ConfigTests: XCTestCase {
         let c = try JSONDecoder().decode(Config.self, from: Data(#"{"disk":{"worktreeStaleDays":7}}"#.utf8))
         XCTAssertEqual(c.disk.worktreeStaleDays, 7)
         XCTAssertEqual(c.disk.caches.count, 11)
-        XCTAssertEqual(c.boot.keep.count, 7)
+        XCTAssertEqual(c.boot.keep.count, 2)
     }
 
     func testRoundTripsThroughJSON() throws {

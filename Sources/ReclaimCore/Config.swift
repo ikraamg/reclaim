@@ -72,9 +72,8 @@ public struct CPUHog: Codable, Equatable, Sendable {
 }
 
 public struct Boot: Codable, Equatable, Sendable {
-    // Launch agents/daemons already said yes to; anything else non-Apple is listed.
-    public var keep = ["homebrew.mxcl.", "com.grammarly.", "com.ikraam.", "com.logi.optionsplus",
-                       "com.docker.", "com.nordvpn.macos.helper", "us.zoom.ZoomDaemon"]
+    // Launch agents/daemons already said yes to; anything else non-Apple is listed. Add your own prefixes in config.json.
+    public var keep = ["homebrew.mxcl.", "com.docker."]
     public var cpuHog = CPUHog()
     public init() {}
     public init(from decoder: Decoder) throws {
