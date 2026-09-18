@@ -43,7 +43,7 @@ final class BootParseTests: XCTestCase {
     }
 
     func testStartedServices() {
-        let out = "Name          Status  User   File\natuin         none\npostgresql@16 started ikraam ~/Library/LaunchAgents/homebrew.mxcl.postgresql@16.plist\nredis         error  256 ikraam x\n"
+        let out = "Name          Status  User   File\natuin         none\npostgresql@16 started me ~/Library/LaunchAgents/homebrew.mxcl.postgresql@16.plist\nredis         error  256 me x\n"
         XCTAssertEqual(BootParse.startedServices(out), ["postgresql@16"])
     }
 }
