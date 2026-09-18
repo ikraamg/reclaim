@@ -20,7 +20,13 @@ Swift, no dependencies. Ships as a menu bar app and a CLI that share one core.
 
 ## Install
 
-    scripts/install.sh      # builds release, copies to ~/.local/bin/reclaim, runs --self-check
+Download `Reclaim-<version>.zip` from [Releases](https://github.com/ikraamg/reclaim/releases), unzip, drag
+Reclaim.app to /Applications and open it. It is signed and notarized. Settings installs the `reclaim` CLI as
+`~/.local/bin/reclaim`.
+
+From source:
+
+    scripts/install.sh      # CLI only: builds release, copies to ~/.local/bin/reclaim, runs --self-check
 
 ## App
 
