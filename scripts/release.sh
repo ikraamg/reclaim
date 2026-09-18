@@ -35,3 +35,4 @@ fi
 
 open /Applications/Reclaim.app
 echo /Applications/Reclaim.app
+shasum -a 256 .build/Reclaim.zip | cut -d' ' -f1 | sed 's/^/sha256 for the cask: /' >&2
