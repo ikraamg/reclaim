@@ -16,6 +16,7 @@ if [ -n "$identity" ]; then
   grep -q 'status: Accepted' .build/notarize.log || { echo "release: notarization rejected" >&2; exit 1; }
   xcrun stapler staple "$app"
   spctl -a -vv "$app"
+  ditto -c -k --keepParent "$app" .build/Reclaim.zip   # re-zip with the ticket stapled: this is the release asset
 else
   echo "release: no RECLAIM_SIGN_IDENTITY - ad-hoc build, not notarized" >&2
   app="$(CONFIGURATION=Release scripts/build-app.sh)"
